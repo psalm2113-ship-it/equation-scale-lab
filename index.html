@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>등식 저울과 괄호 결합기 - 완전제곱식 식조작 랩</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --prompt-bg: #fff1f2;
+      --prompt-border: #e11d48;
+      --prompt-text: #881337;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Pretendard", "Malgun Gothic", sans-serif;
+    }
+
+    /* 스크롤 없이 한 화면에 쏙 들어오도록 뷰포트 기준 플렉스 레이아웃 구성 */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 16px;
+    }
+
+    .container {
+      max-width: 1040px;
+      width: 100%;
+      height: 100%;
+      max-height: 780px;
+      background: var(--card);
+      border-radius: 20px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    :fullscreen body {
+      padding: 16px 24px;
+    }
+    :fullscreen .container {
+      max-width: 1180px;
+      max-height: 95vh;
+      padding: 22px 32px;
+    }
+
+    /* 상단 헤더 & 유형 탭 + 전체화면 버튼 */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .type-tabs {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .type-tab {
+      padding: 6px 11px;
+      font-size: 13.5px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 2px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.18s;
+      flex: none;
+    }
+
+    .type-tab:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .type-tab.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary-dark);
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+    }
+
+    .type-tab.random-tab {
+      border-color: #c4b5fd;
+      background: #f5f3ff;
+      color: #5b21b6;
+    }
+    .type-tab.random-tab:hover {
+      background: #ede9fe;
+    }
+    .type-tab.random-tab.active {
+      background: var(--purple);
+      color: #ffffff;
+      border-color: #5b21b6;
+      box-shadow: 0 3px 8px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-fullscreen {
+      padding: 6px 11px;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 2px solid #94a3b8;
+      background: #1e293b;
+      color: #ffffff;
+      cursor: pointer;
+      flex: none;
+      transition: 0.18s;
+    }
+
+    .btn-fullscreen:hover {
+      background: #334155;
+    }
+
+    /* 진행 단계 표시줄 (0단계 ~ 3단계 + 완료) */
+    .progress-steps {
+      display: flex;
+      gap: 8px;
+      margin: 6px 0;
+      flex-shrink: 0;
+    }
+
+    .step-pill {
+      flex: 1;
+      text-align: center;
+      padding: 7px 6px;
+      font-size: 13.5px;
+      font-weight: 800;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #64748b;
+      border: 2px solid transparent;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+
+    .step-pill.active {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-color: #60a5fa;
+    }
+
+    .step-pill.done {
+      background: var(--success-light);
+      color: var(--success);
+      border-color: #86efac;
+    }
+
+    /* 메인 수식 박스 */
+    .step-box {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      padding: 8px 16px;
+      border-radius: 12px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .eq-display {
+      font-size: 29px;
+      font-weight: 900;
+      color: #0f172a;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+
+    /* 상태 배지 */
+    .status-wrap {
+      text-align: center;
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 16px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 14.5px;
+      transition: 0.2s;
+    }
+
+    .status-neutral { background: #e2e8f0; color: #334155; }
+    .status-err { background: var(--danger-light); color: var(--danger); border: 1.5px solid #fca5a5; }
+    .status-warn { background: var(--warning-light); color: #b45309; border: 1.5px solid #fcd34d; }
+    .status-succ { background: var(--success-light); color: var(--success); border: 1.5px solid #86efac; }
+
+    /* 중앙 가변 워크스페이스 영역 */
+    .middle-stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin: 4px 0;
+    }
+
+    /* 0단계: 문제 유형 선택 그리드 (4개 유형 + 하단 통합 쌩랜덤 카드) */
+    .step0-area {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-height: 100%;
+    }
+
+    .type-card {
+      background: #ffffff;
+      border: 2.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .type-card:hover {
+      border-color: var(--primary);
+      background: #eff6ff;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.14);
+    }
+
+    /* 5번째 카드: 완전 랜덤(4개 유형 혼합) 전용 카드 */
+    .type-card.random-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      border-color: #a78bfa;
+      flex-direction: row;
+      gap: 14px;
+      padding: 12px 20px;
+    }
+
+    .type-card.random-card:hover {
+      border-color: var(--purple);
+      background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.2);
+    }
+
+    .type-card-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 800;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .type-card-badge.purple {
+      background: var(--purple);
+      color: #ffffff;
+      font-size: 13.5px;
+      padding: 4px 12px;
+    }
+
+    .type-card-title {
+      font-size: 18.5px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .type-card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* 1단계 & 2단계 워크스페이스: 저울 + 기하 넓이 모델 */
+    .workspace-grid {
+      display: none;
+      width: 100%;
+      height: 100%;
+      max-height: 265px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .workspace-grid.step1-mode {
+      grid-template-columns: 1fr;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .workspace-grid.step2-mode {
+      grid-template-columns: 1.35fr 0.85fr;
+    }
+
+    /* 저울 그래픽 */
+    .scale-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 14px 8px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+    }
+
+    .plates {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 550px;
+      margin-bottom: 8px;
+      z-index: 2;
+      gap: 10px;
+    }
+
+    .plate {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 9px 8px;
+      text-align: center;
+      border: 2.5px solid #94a3b8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
+    }
+
+    .plate-label {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 800;
+    }
+
+    .plate-expr {
+      font-size: 19px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    /* 1단계에서 상수항 소거 과정을 보여주는 보조 줄 */
+    .plate-sub-result {
+      margin-top: 5px;
+      font-size: 13px;
+      font-weight: 800;
+      min-height: 18px;
+      color: var(--muted);
+    }
+
+    .strike-cancel {
+      text-decoration: line-through;
+      text-decoration-thickness: 2.5px;
+      text-decoration-color: var(--danger);
+      color: #94a3b8;
+      background: #fee2e2;
+      padding: 1px 5px;
+      border-radius: 5px;
+    }
+
+    /* 좌변 접시와 우변 접시 사이의 등호/부등호 표시기 */
+    .eq-sign-box {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #1e293b;
+      border: 2.5px solid #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 900;
+      flex: none;
+      transition: all 0.25s ease;
+    }
+
+    .eq-sign-box.equal {
+      background: var(--success-light);
+      color: var(--success);
+      border-color: #22c55e;
+    }
+
+    .eq-sign-box.not-equal {
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: #ef4444;
+      transform: scale(1.08);
+    }
+
+    .scale-beam {
+      width: 360px;
+      max-width: 88%;
+      height: 8px;
+      background: #334155;
+      border-radius: 4px;
+      position: relative;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center center;
+    }
+
+    .scale-fulcrum {
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-bottom: 26px solid #1e293b;
+      margin-top: -2px;
+    }
+
+    .scale-base {
+      width: 100px;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 3px;
+    }
+
+    /* 넓이 모델 (대수타일 - 하단 힌트 멘트 없이 모형만 표시) */
+    .geo-card {
+      background: #f8fafc;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .geo-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+
+    .area-grid {
+      display: grid;
+      grid-template-columns: 112px 64px;
+      grid-template-rows: 112px 64px;
+      gap: 5px;
+      padding: 6px;
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      border-radius: 6px;
+      font-size: 19px;
+      transition: 0.25s;
+    }
+
+    .tile-x2 {
+      background: #bfdbfe;
+      color: #1e40af;
+      border: 2.5px solid #60a5fa;
+    }
+
+    .tile-bx {
+      background: #bbf7d0;
+      color: #166534;
+      border: 2.5px solid #4ade80;
+      font-size: 16px;
+    }
+
+    .tile-corner {
+      background: #ffffff;
+      color: #64748b;
+      border: 2.5px dashed #94a3b8;
+      font-size: 17px;
+    }
+
+    .tile-corner.filled-correct {
+      background: #fef08a;
+      color: #854d0e;
+      border: 2.5px solid #eab308;
+      transform: scale(1.04);
+    }
+
+    .tile-corner.filled-wrong {
+      background: #fecaca;
+      color: #991b1b;
+      border: 2.5px dashed #ef4444;
+    }
+
+    /* 입력창 공통 */
+    .input-box {
+      width: 64px;
+      height: 38px;
+      padding: 4px 6px;
+      font-size: 19px;
+      text-align: center;
+      border: 2.5px solid #64748b;
+      border-radius: 8px;
+      font-weight: 900;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .input-box:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+    }
+
+    /* 3단계 해 구하기 입력 영역 */
+    .solve-area {
+      display: none;
+      width: 100%;
+      max-width: 660px;
+      background: #f8fafc;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .solve-guide {
+      font-size: 16px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .solve-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 28px;
+      font-weight: 900;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+
+    .sqrt-wrap {
+      display: inline-flex;
+      align-items: center;
+      border-top: 3.5px solid #0f172a;
+      padding-top: 4px;
+      margin-left: -4px;
+    }
+
+    /* 완료 화면 (3단계 정답 후 별도 화면으로 전환) */
+    .complete-area {
+      display: none;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 3px solid #22c55e;
+      border-radius: 18px;
+      padding: 18px 24px;
+      text-align: center;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(22, 163, 74, 0.14);
+    }
+
+    .complete-badge {
+      background: #16a34a;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 900;
+      padding: 5px 16px;
+      border-radius: 20px;
+    }
+
+    .complete-title {
+      font-size: 25px;
+      font-weight: 900;
+      color: #14532d;
+      margin: 0;
+    }
+
+    .complete-steps-summary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 2px solid #86efac;
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 10px;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    .summary-eq {
+      font-size: 19px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .summary-eq.final-ans {
+      color: #15803d;
+      font-size: 21px;
+      background: #dcfce7;
+      padding: 3px 10px;
+      border-radius: 8px;
+    }
+
+    .summary-arrow {
+      font-size: 18px;
+      font-weight: 900;
+      color: #22c55e;
+    }
+
+    /* 비계(Scaffolding) 힌트 영역: 학생이 직접 눌러서 여닫는 구조 */
+    .scaffold-section {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hint-toggle-bar {
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-hint-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 20px;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 30px;
+      border: 2px solid var(--prompt-border);
+      background: #fff1f2;
+      color: var(--prompt-text);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 3px 10px rgba(225, 29, 72, 0.12);
+    }
+
+    .btn-hint-toggle:hover {
+      background: #ffe4e6;
+      transform: translateY(-1px);
+    }
+
+    .btn-hint-toggle.has-alert {
+      background: var(--prompt-border);
+      color: #ffffff;
+      animation: pulseHint 1.4s infinite;
+    }
+
+    @keyframes pulseHint {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.45); }
+      50% { box-shadow: 0 0 0 8px rgba(225, 29, 72, 0); }
+    }
+
+    /* 교사의 발문 & 비계 안내창 (눌렀을 때만 펼쳐짐) */
+    .hint-card {
+      display: none;
+      background: var(--prompt-bg);
+      border: 2.5px solid #fda4af;
+      border-left: 10px solid var(--prompt-border);
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--prompt-text);
+      line-height: 1.45;
+      box-shadow: 0 4px 14px rgba(225, 29, 72, 0.12);
+    }
+
+    .hint-card.open {
+      display: block;
+    }
+
+    .hint-card.step1-spotlight {
+      background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+      border-color: var(--prompt-border);
+      border-left-width: 12px;
+      font-size: 17px;
+    }
+
+    .prompt-tag {
+      display: inline-block;
+      background: var(--prompt-border);
+      color: #ffffff;
+      font-size: 13.5px;
+      font-weight: 900;
+      padding: 2px 9px;
+      border-radius: 6px;
+      margin-right: 7px;
+      vertical-align: middle;
+    }
+
+    /* 컨트롤 버튼 */
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    button.ctrl-btn {
+      flex: 1;
+      padding: 11px 16px;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+      display: none;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22);
+    }
+
+    .btn-success:hover {
+      background: #15803d;
+    }
+
+    .btn-reroll {
+      background: #ede9fe;
+      color: #5b21b6;
+      border: 2px solid #c4b5fd;
+      flex: none;
+      padding: 11px 15px;
+      display: none;
+    }
+
+    .btn-reroll:hover {
+      background: #ddd6fe;
+    }
+
+    .btn-reset {
+      background: #e2e8f0;
+      color: #334155;
+      flex: none;
+      padding: 11px 15px;
+    }
+
+    .btn-reset:hover {
+      background: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 상단 헤더 & 문제 유형 탭(4개 유형 + 쌩랜덤) + 전체화면 버튼 -->
+  <div class="header-bar">
+    <div class="title-wrap">
+      <h2>⚖️ 등식 저울과 괄호 결합기</h2>
+    </div>
+    <div class="header-controls">
+      <div class="type-tabs">
+        <button class="type-tab" id="tab0" onclick="selectProblemType(0)">유형 1: 기본형</button>
+        <button class="type-tab" id="tab1" onclick="selectProblemType(1)">유형 2: 음수 일차항</button>
+        <button class="type-tab" id="tab2" onclick="selectProblemType(2)">유형 3: 응용형</button>
+        <button class="type-tab" id="tab3" onclick="selectProblemType(3)">유형 4: 정수 해</button>
+        <button class="type-tab random-tab" id="tab4" onclick="selectProblemType(4)">🎲 완전 랜덤</button>
+      </div>
+      <button class="btn-fullscreen" id="fullscreenBtn" onclick="toggleFullScreen()">⛶ 전체화면</button>
+    </div>
+  </div>
+
+  <!-- 단계 진행 표시 (0단계 ~ 완료) -->
+  <div class="progress-steps">
+    <div class="step-pill active" id="pill0">0단계: 유형 선택</div>
+    <div class="step-pill" id="pill1">1단계: 상수항 정리</div>
+    <div class="step-pill" id="pill2">2단계: 완전제곱식 만들기</div>
+    <div class="step-pill" id="pill3">3단계: 해 구하기</div>
+    <div class="step-pill" id="pill4">🎉 풀이 완료</div>
+  </div>
+
+  <!-- 메인 방정식 표시 -->
+  <div class="step-box" id="topStepBox">
+    <div class="step-title" id="stepDesc">0단계: 도전할 이차방정식의 문제 유형을 선택하세요</div>
+    <div class="eq-display" id="mainEq">문제 유형을 선택하면 방정식이 나타납니다</div>
+  </div>
+
+  <!-- 현재 상태 배지 -->
+  <div class="status-wrap" id="topStatusWrap">
+    <div id="statusBadge" class="status-badge status-neutral">아래 유형 중 하나를 골라 시작해 보세요!</div>
+  </div>
+
+  <!-- 중앙 인터랙티브 영역 -->
+  <div class="middle-stage">
+    <!-- 0단계 영역: 4가지 유형 카드 + 모든 유형을 섞은 '쌩랜덤' 카드 -->
+    <div class="step0-area" id="step0Area">
+      <div class="type-card" onclick="selectProblemType(0)">
+        <span class="type-card-badge">유형 1</span>
+        <div class="type-card-title">기본형 (양수 일차항)</div>
+        <div class="type-card-desc">일차항의 계수가 양수인 기본적인 이차방정식</div>
+      </div>
+      <div class="type-card" onclick="selectProblemType(1)">
+        <span class="type-card-badge">유형 2</span>
+        <div class="type-card-title">음수 일차항</div>
+        <div class="type-card-desc">일차항의 계수가 음수여서 부호에 주의해야 하는 방정식</div>
+      </div>
+      <div class="type-card" onclick="selectProblemType(2)">
+        <span class="type-card-badge">유형 3</span>
+        <div class="type-card-title">응용형</div>
+        <div class="type-card-desc">계수와 상수항의 절댓값이 조금 더 큰 응용 방정식</div>
+      </div>
+      <div class="type-card" onclick="selectProblemType(3)">
+        <span class="type-card-badge">유형 4</span>
+        <div class="type-card-title">정수 해 유형</div>
+        <div class="type-card-desc">근호가 깔끔하게 정리되어 정수 해가 나오는 방정식</div>
+      </div>
+      <div class="type-card random-card" onclick="selectProblemType(4)">
+        <span class="type-card-badge purple">🎲 완전 랜덤 도전</span>
+        <div style="text-align: left;">
+          <div class="type-card-title" style="color: #4c1d95;">유형 무작위 출제 (유형 1 ~ 4 통합 쌩랜덤)</div>
+          <div class="type-card-desc" style="color: #5b21b6;">어떤 유형인지 알려주지 않고, 해가 존재하며 식조작이 필요한 방정식이 무작위로 출제됩니다!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1단계 & 2단계 공통 저울 워크스페이스 -->
+    <div class="workspace-grid" id="scaleArea">
+      <!-- 좌측(1단계에선 중앙 전체): 등식 저울 -->
+      <div class="scale-container">
+        <div class="plates">
+          <div class="plate" id="leftPlate">
+            <div class="plate-label">좌변 접시</div>
+            <div class="plate-expr">
+              <span id="leftExprText">x² + 6x + 2</span>
+              <span id="leftOpSign">+</span>
+              <input type="text" inputmode="numeric" id="leftInput" class="input-box" placeholder="?">
+            </div>
+            <div class="plate-sub-result" id="leftSubResult"></div>
+          </div>
+
+          <!-- 등호 / 부등호 표시기 -->
+          <div class="eq-sign-box equal" id="eqSignBox" title="등호 상태">=</div>
+
+          <div class="plate" id="rightPlate">
+            <div class="plate-label">우변 접시</div>
+            <div class="plate-expr">
+              <span id="rightExprText">0</span>
+              <span id="rightOpSign">+</span>
+              <input type="text" inputmode="numeric" id="rightInput" class="input-box" placeholder="?">
+            </div>
+            <div class="plate-sub-result" id="rightSubResult"></div>
+          </div>
+        </div>
+        <div class="scale-beam" id="beam"></div>
+        <div class="scale-fulcrum"></div>
+        <div class="scale-base"></div>
+      </div>
+
+      <!-- 우측(2단계에서만 표시): 정사각형 넓이 모델 -->
+      <div class="geo-card" id="geoCard">
+        <div class="geo-title">📐 완전제곱식 넓이 모델</div>
+        <div class="area-grid">
+          <div class="tile tile-x2">
+            <span>x²</span>
+            <small style="font-weight:700; font-size:11px; margin-top:2px;">(x × x)</small>
+          </div>
+          <div class="tile tile-bx" id="tileRight">3x</div>
+          <div class="tile tile-bx" id="tileBottom">3x</div>
+          <div class="tile tile-corner" id="tileCorner">?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3단계 영역: 학생 직접 해 입력 -->
+    <div class="solve-area" id="solveArea">
+      <div class="solve-guide">
+        제곱근의 성질: <strong>A² = k (k ≥ 0)</strong> 이면 <strong>A = ±√k</strong> 입니다.
+      </div>
+      <div class="solve-row">
+        <span>x = </span>
+        <input type="text" inputmode="numeric" id="ansPart1" class="input-box" placeholder="?">
+        <span> ± √</span>
+        <span class="sqrt-wrap">
+          <input type="text" inputmode="numeric" id="ansPart2" class="input-box" placeholder="?">
+        </span>
+      </div>
+      <div style="font-size: 14.5px; color: var(--muted); font-weight: 600;" id="solveSubNote">
+        ※ 첫 번째 칸에는 이항된 수를, 근호(√) 안에는 제곱하기 전의 수를 넣어보세요.
+      </div>
+    </div>
+
+    <!-- 완료 화면 (3단계 정답을 맞춘 뒤 넘어가는 전용 축하 & 요약 화면) -->
+    <div class="complete-area" id="completeArea">
+      <span class="complete-badge">🏆 MISSION CLEAR</span>
+      <h3 class="complete-title">🎉 정답입니다! 완전제곱식 풀이를 완벽히 마스터했어요!</h3>
+      <div class="complete-steps-summary" id="completeSummary"></div>
+      <div style="font-size: 15.5px; color: #166534; font-weight: 700;" id="completeNote"></div>
+    </div>
+  </div>
+
+  <!-- 비계(Scaffolding) 영역: 학생이 필요할 때 직접 눌러서 여는 힌트 토글 버튼 + 발문 카드 -->
+  <div class="scaffold-section" id="scaffoldSection" style="display:none;">
+    <div class="hint-toggle-bar">
+      <button type="button" class="btn-hint-toggle" id="hintToggleBtn" onclick="toggleHintBox()">
+        💡 선생님의 발문 · 힌트 보기
+      </button>
+    </div>
+    <div class="hint-card" id="hintBox"></div>
+  </div>
+
+  <!-- 액션 버튼 -->
+  <div class="btn-group" id="btnGroup">
+    <button id="actionBtn" class="ctrl-btn btn-primary" style="display:none;"></button>
+    <button id="combineBtn" class="ctrl-btn btn-success" onclick="handleStepTransition()"></button>
+    <button id="rerollBtn" class="ctrl-btn btn-reroll" onclick="rerollCurrentType()">🎲 같은 유형 새 문제</button>
+    <button id="resetBtn" class="ctrl-btn btn-reset" style="display:none;" onclick="goToStep0()">📋 다른 유형 선택 (0단계)</button>
+  </div>
+</div>
+
+<script>
+  const TYPE_NAMES = [
+    "유형 1: 기본형",
+    "유형 2: 음수 일차항",
+    "유형 3: 응용형",
+    "유형 4: 정수 해",
+    "🎲 완전 랜덤"
+  ];
+
+  let currentType = null;
+  let current = { b: 6, c: 2 };
+  let step = 0;
+  let isHintOpen = false;
+  let currentHintLabel = "선생님의 발문 · 힌트 보기";
+
+  // DOM 참조
+  const topStepBox = document.getElementById('topStepBox');
+  const topStatusWrap = document.getElementById('topStatusWrap');
+  const step0Area = document.getElementById('step0Area');
+  const scaleArea = document.getElementById('scaleArea');
+  const geoCard = document.getElementById('geoCard');
+  const solveArea = document.getElementById('solveArea');
+  const completeArea = document.getElementById('completeArea');
+  const completeSummary = document.getElementById('completeSummary');
+  const completeNote = document.getElementById('completeNote');
+
+  const beam = document.getElementById('beam');
+  const leftPlate = document.getElementById('leftPlate');
+  const rightPlate = document.getElementById('rightPlate');
+  const eqSignBox = document.getElementById('eqSignBox');
+  const leftInput = document.getElementById('leftInput');
+  const rightInput = document.getElementById('rightInput');
+  const leftExprText = document.getElementById('leftExprText');
+  const rightExprText = document.getElementById('rightExprText');
+  const leftOpSign = document.getElementById('leftOpSign');
+  const rightOpSign = document.getElementById('rightOpSign');
+  const leftSubResult = document.getElementById('leftSubResult');
+  const rightSubResult = document.getElementById('rightSubResult');
+
+  const statusBadge = document.getElementById('statusBadge');
+  const scaffoldSection = document.getElementById('scaffoldSection');
+  const hintToggleBtn = document.getElementById('hintToggleBtn');
+  const hintBox = document.getElementById('hintBox');
+  const mainEq = document.getElementById('mainEq');
+  const stepDesc = document.getElementById('stepDesc');
+  const actionBtn = document.getElementById('actionBtn');
+  const combineBtn = document.getElementById('combineBtn');
+  const rerollBtn = document.getElementById('rerollBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const tileRight = document.getElementById('tileRight');
+  const tileBottom = document.getElementById('tileBottom');
+  const tileCorner = document.getElementById('tileCorner');
+  const ansPart1 = document.getElementById('ansPart1');
+  const ansPart2 = document.getElementById('ansPart2');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+  leftInput.addEventListener('input', onScaleInput);
+  rightInput.addEventListener('input', onScaleInput);
+
+  // 전체화면 전환
+  function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    fullscreenBtn.innerText = document.fullscreenElement ? "⛶ 전체화면 종료" : "⛶ 전체화면";
+  });
+
+  // 힌트(비계) 카드 열기/닫기 제어
+  function toggleHintBox() {
+    isHintOpen = !isHintOpen;
+    if (isHintOpen) {
+      hintBox.classList.add('open');
+      hintToggleBtn.classList.remove('has-alert');
+      hintToggleBtn.innerText = `🔼 ${currentHintLabel} 접기`;
+    } else {
+      hintBox.classList.remove('open');
+      hintToggleBtn.innerText = `💡 ${currentHintLabel}`;
+    }
+  }
+
+  // 단계 시작 시 힌트 내용 설정 (초기 상태는 접혀 있도록 설정)
+  function setHintContent(html, labelText = "선생님의 발문 · 힌트 보기", isStep1 = false, highlightAlert = false) {
+    currentHintLabel = labelText;
+    hintBox.innerHTML = html;
+    hintBox.className = isStep1 ? "hint-card step1-spotlight" : "hint-card";
+    if (isHintOpen) {
+      hintBox.classList.add('open');
+      hintToggleBtn.classList.remove('has-alert');
+      hintToggleBtn.innerText = `🔼 ${currentHintLabel} 접기`;
+    } else {
+      hintToggleBtn.innerText = `💡 ${currentHintLabel}`;
+      if (highlightAlert) {
+        hintToggleBtn.classList.add('has-alert');
+      } else {
+        hintToggleBtn.classList.remove('has-alert');
+      }
+    }
+  }
+
+  // 새 단계 진입 시 힌트를 닫힌 상태로 리셋
+  function resetHintCollapsed() {
+    isHintOpen = false;
+    hintBox.classList.remove('open');
+    hintToggleBtn.classList.remove('has-alert');
+  }
+
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // 유형별 맞춤 랜덤 방정식 생성 (typeIdx === 4 인 경우 0~3 유형 전체 혼합 쌩랜덤)
+  function generateEquationByType(typeIdx) {
+    let b, c, rhs;
+    let attempts = 0;
+
+    do {
+      attempts++;
+      const effectiveType = (typeIdx === 4) ? Math.floor(Math.random() * 4) : typeIdx;
+
+      if (effectiveType === 0) {
+        const bList = [2, 4, 6, 8];
+        b = pickRandom(bList);
+        const halfSq = (b / 2) * (b / 2);
+        const nonSquareRhs = [2, 3, 5, 6, 7, 8, 10, 11, 12];
+        rhs = pickRandom(nonSquareRhs);
+        c = halfSq - rhs;
+      } else if (effectiveType === 1) {
+        const bList = [-2, -4, -6, -8, -10];
+        b = pickRandom(bList);
+        const halfSq = (b / 2) * (b / 2);
+        const nonSquareRhs = [2, 3, 5, 6, 7, 8, 10, 11, 13, 14, 15];
+        rhs = pickRandom(nonSquareRhs);
+        c = halfSq - rhs;
+      } else if (effectiveType === 2) {
+        const bList = [-12, -10, -8, 8, 10, 12];
+        b = pickRandom(bList);
+        const halfSq = (b / 2) * (b / 2);
+        const nonSquareRhs = [5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20];
+        rhs = pickRandom(nonSquareRhs);
+        c = halfSq - rhs;
+      } else {
+        const bList = [-12, -10, -8, -6, -4, 4, 6, 8, 10, 12];
+        b = pickRandom(bList);
+        const halfSq = (b / 2) * (b / 2);
+        const squareRhs = [1, 4, 9, 16, 25].filter(sq => sq !== halfSq);
+        rhs = pickRandom(squareRhs);
+        c = halfSq - rhs;
+      }
+    } while ((c === 0 || (b === current.b && c === current.c)) && attempts < 30);
+
+    return { b, c };
+  }
+
+  function formatBx(b) {
+    if (b > 0) return `+ ${b}x`;
+    return `- ${Math.abs(b)}x`;
+  }
+  function formatConst(c) {
+    if (c > 0) return `+ ${c}`;
+    if (c < 0) return `- ${Math.abs(c)}`;
+    return '';
+  }
+  function formatFactor(halfB) {
+    if (halfB > 0) return `(x + ${halfB})²`;
+    return `(x - ${Math.abs(halfB)})²`;
+  }
+  function cConstLabel(c) {
+    return c > 0 ? `+${c}` : `${c}`;
+  }
+
+  function updateTypeTabs(activeIdx) {
+    for (let i = 0; i < 5; i++) {
+      const tab = document.getElementById(`tab${i}`);
+      if (!tab) continue;
+      if (i === activeIdx) tab.classList.add('active');
+      else tab.classList.remove('active');
+    }
+  }
+
+  function updatePills(currentStep) {
+    const pills = [
+      document.getElementById('pill0'),
+      document.getElementById('pill1'),
+      document.getElementById('pill2'),
+      document.getElementById('pill3'),
+      document.getElementById('pill4')
+    ];
+    pills.forEach((p, idx) => {
+      p.className = 'step-pill';
+      if (idx < currentStep) p.classList.add('done');
+      else if (idx === currentStep) p.classList.add('active');
+    });
+  }
+
+  // 0단계: 유형 선택 화면
+  function goToStep0() {
+    step = 0;
+    currentType = null;
+    updatePills(0);
+    updateTypeTabs(-1);
+
+    topStepBox.style.display = "block";
+    topStatusWrap.style.display = "block";
+    step0Area.style.display = "grid";
+    scaleArea.style.display = "none";
+    solveArea.style.display = "none";
+    completeArea.style.display = "none";
+    scaffoldSection.style.display = "none";
+
+    actionBtn.style.display = "none";
+    combineBtn.style.display = "none";
+    rerollBtn.style.display = "none";
+    resetBtn.style.display = "none";
+
+    stepDesc.innerText = "0단계: 도전할 이차방정식의 문제 유형을 선택하세요";
+    mainEq.innerText = "문제 유형을 골라 시작해 보세요!";
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "유형별 문제 또는 모든 유형이 섞인 '완전 랜덤' 문제를 선택할 수 있습니다";
+  }
+
+  function selectProblemType(typeIdx) {
+    currentType = typeIdx;
+    current = generateEquationByType(typeIdx);
+    updateTypeTabs(typeIdx);
+    startStep1();
+  }
+
+  function rerollCurrentType() {
+    if (currentType === null) return;
+    current = generateEquationByType(currentType);
+    startStep1();
+  }
+
+  // 1단계: 시각적 저울로 양변에서 상수항 없애기
+  function startStep1() {
+    step = 1;
+    updatePills(1);
+    resetHintCollapsed();
+    const { b, c } = current;
+    const cStr = formatConst(c);
+
+    topStepBox.style.display = "block";
+    topStatusWrap.style.display = "block";
+    step0Area.style.display = "none";
+    solveArea.style.display = "none";
+    completeArea.style.display = "none";
+    scaffoldSection.style.display = "flex";
+
+    scaleArea.style.display = "grid";
+    scaleArea.className = "workspace-grid step1-mode";
+    geoCard.style.display = "none";
+
+    actionBtn.style.display = "none";
+    combineBtn.style.display = "none";
+    rerollBtn.style.display = "block";
+    rerollBtn.innerText = currentType === 4 ? "🎲 새로운 랜덤 문제" : "🎲 같은 유형 새 문제";
+    resetBtn.style.display = "block";
+
+    stepDesc.innerText = `[${TYPE_NAMES[currentType]}] 1단계: 양변에 같은 수를 더하거나 빼서 좌변의 상수항 없애기`;
+    mainEq.innerText = `x² ${formatBx(b)} ${cStr} = 0`;
+
+    leftExprText.innerHTML = `x² ${formatBx(b)} <span id="constTermSpan">${cStr}</span>`;
+    leftOpSign.innerText = "";
+    leftInput.placeholder = "±수";
+    leftInput.value = "";
+    leftSubResult.innerHTML = "좌변의 상수항을 0으로 만들어 보세요";
+
+    rightExprText.innerText = "0";
+    rightOpSign.innerText = "";
+    rightInput.placeholder = "±수";
+    rightInput.value = "";
+    rightSubResult.innerHTML = "우변에도 똑같은 수를 연산하세요";
+
+    ansPart1.value = "";
+    ansPart2.value = "";
+    setTilt(0);
+    updateEqualSign(true);
+
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "좌변과 우변 접시에 알맞은 수를 입력해 상수항을 없애보세요 (모르면 아래 힌트 클릭!)";
+
+    setHintContent(
+      `<span class="prompt-tag">👩‍🏫 선생님의 발문</span> 좌변에 <strong>x² ${formatBx(b)}</strong> 만 남기려면 상수항 <strong>${cConstLabel(c)}</strong>을(를) 없애야 합니다. 등식의 성질을 이용해 양변의 접시에 각각 얼마를 더하거나 빼야 할지 직접 입력해 보세요!`,
+      "1단계 선생님의 발문 · 힌트 보기",
+      true,
+      false
+    );
+  }
+
+  function onScaleInput() {
+    if (step === 1) {
+      checkStep1Scale();
+    } else if (step === 2) {
+      checkStep2Balance();
+    }
+  }
+
+  function parseSignedInput(str) {
+    const cleaned = str.replace(/\s+/g, '');
+    if (cleaned === '' || cleaned === '+' || cleaned === '-') return NaN;
+    return Number(cleaned);
+  }
+
+  // 1단계 저울 판정
+  function checkStep1Scale() {
+    const lVal = parseSignedInput(leftInput.value);
+    const rVal = parseSignedInput(rightInput.value);
+    const { b, c } = current;
+    const targetCancelVal = -c;
+    const constSpan = document.getElementById('constTermSpan');
+
+    if (isNaN(lVal) && isNaN(rVal)) {
+      setTilt(0);
+      updateEqualSign(true);
+      if (constSpan) constSpan.className = "";
+      leftSubResult.innerHTML = "좌변의 상수항을 0으로 만들어 보세요";
+      rightSubResult.innerHTML = "우변에도 똑같은 수를 연산하세요";
+      statusBadge.className = "status-badge status-neutral";
+      statusBadge.innerText = "좌변과 우변 접시에 알맞은 수를 입력해 보세요 (예: -2 또는 +5)";
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (!isNaN(lVal)) {
+      const newConst = c + lVal;
+      const lValStr = lVal >= 0 ? `+ ${lVal}` : `- ${Math.abs(lVal)}`;
+      if (newConst === 0) {
+        if (constSpan) constSpan.className = "strike-cancel";
+        leftSubResult.innerHTML = `<span class="strike-cancel">${formatConst(c)} ${lValStr}</span> ➔ <strong style="color:var(--success);">x² ${formatBx(b)} 만 남음!</strong>`;
+      } else {
+        if (constSpan) constSpan.className = "";
+        leftSubResult.innerHTML = `정리 결과: x² ${formatBx(b)} ${formatConst(newConst)} (상수항이 남음)`;
+      }
+    } else {
+      if (constSpan) constSpan.className = "";
+      leftSubResult.innerHTML = "좌변 접시에 수를 입력하세요";
+    }
+
+    if (!isNaN(rVal)) {
+      rightSubResult.innerHTML = `정리 결과: <strong>${rVal}</strong>`;
+    } else {
+      rightSubResult.innerHTML = "우변 접시에 수를 입력하세요";
+    }
+
+    if (!isNaN(lVal) && isNaN(rVal)) {
+      setTilt(-8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 우변 접시에도 같은 수를 입력해야 등식이 유지됩니다 (≠)";
+      combineBtn.style.display = "none";
+      return;
+    }
+    if (isNaN(lVal) && !isNaN(rVal)) {
+      setTilt(8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 좌변 접시에도 같은 수를 입력해야 등식이 유지됩니다 (≠)";
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (lVal !== rVal) {
+      setTilt(lVal > rVal ? -8 : 8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 양변에 연산한 수가 서로 달라 등호가 깨졌습니다 (≠)";
+      setHintContent(
+        `<span class="prompt-tag">🚨 등식의 성질 힌트</span> 좌변과 우변에 서로 다른 수를 넣으면 등식이 성립하지 않습니다(<strong>≠</strong>). 양변에 <strong>같은 수</strong>를 넣어야 합니다!`,
+        "등식의 성질 힌트 보기",
+        true,
+        true
+      );
+      combineBtn.style.display = "none";
+    } else {
+      setTilt(0);
+      updateEqualSign(true);
+      if (lVal === targetCancelVal) {
+        statusBadge.className = "status-badge status-succ";
+        statusBadge.innerText = "✨ 상수항 소거 성공! 좌변에 이차항과 일차항만 남았습니다";
+        setHintContent(
+          `<span class="prompt-tag">🎉 1단계 성공</span> 양변에 똑같이 <strong>${lVal > 0 ? '+' + lVal : lVal}</strong>을(를) 연산하여 좌변의 상수항이 사라지고 <strong>x² ${formatBx(b)} = ${targetCancelVal}</strong> 이 되었습니다!`,
+          "1단계 정리 설명 보기",
+          false,
+          false
+        );
+        combineBtn.innerText = "✨ 상수항 정리 완료! (2단계로 이동 ➔)";
+        combineBtn.style.display = "block";
+      } else if (lVal === c) {
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerText = "⚖️ 저울은 평형(=)이지만, 좌변의 상수항이 사라지지 않았어요!";
+        setHintContent(
+          `<span class="prompt-tag">🤔 부호 확인 힌트</span> 양변에 같은 수를 넣어 등식(<strong>=</strong>)은 유지되었지만, 좌변의 상수항이 사라지지 않고 <strong>${formatConst(c + lVal)}</strong>이(가) 되었습니다. 상수항을 <strong>0</strong>으로 만들려면 부호가 어떠해야 할까요?`,
+          "상수항 부호 힌트 보기",
+          true,
+          true
+        );
+        combineBtn.style.display = "none";
+      } else {
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerText = "⚖️ 저울은 평형(=)이지만, 좌변에 아직 상수항이 남아 있습니다";
+        setHintContent(
+          `<span class="prompt-tag">🤔 다시 생각해보기</span> 좌변의 상수항 <strong>${cConstLabel(c)}</strong>을(를) 완전히 없애서 <strong>0</strong>으로 만들려면 양변에 어떤 수를 넣어야 할지 다시 확인해 보세요!`,
+          "1단계 힌트 보기",
+          true,
+          true
+        );
+        combineBtn.style.display = "none";
+      }
+    }
+  }
+
+  function handleStepTransition() {
+    if (step === 1) {
+      startStep2();
+    } else if (step === 2) {
+      handleCombine();
+    }
+  }
+
+  // 1단계 -> 2단계 전환
+  function startStep2() {
+    step = 2;
+    updatePills(2);
+    resetHintCollapsed();
+    const { b, c } = current;
+    const rhs = -c;
+    const halfB = b / 2;
+    const absHalfB = Math.abs(halfB);
+
+    scaleArea.className = "workspace-grid step2-mode";
+    geoCard.style.display = "flex";
+    combineBtn.style.display = "none";
+
+    stepDesc.innerText = `[${TYPE_NAMES[currentType]}] 2단계: 좌변을 완전제곱식으로 만드는 적절한 수 더하기`;
+    mainEq.innerText = `x² ${formatBx(b)} = ${rhs}`;
+
+    leftExprText.innerText = `x² ${formatBx(b)}`;
+    leftOpSign.innerText = "+";
+    leftInput.placeholder = "?";
+    leftInput.value = "";
+    leftSubResult.innerHTML = "";
+
+    rightExprText.innerText = `${rhs}`;
+    rightOpSign.innerText = "+";
+    rightInput.placeholder = "?";
+    rightInput.value = "";
+    rightSubResult.innerHTML = "";
+
+    tileRight.innerText = `${halfB > 0 ? '' : '-'}${absHalfB}x`;
+    tileBottom.innerText = `${halfB > 0 ? '' : '-'}${absHalfB}x`;
+    tileCorner.innerText = "?";
+    tileCorner.className = "tile tile-corner";
+
+    setTilt(0);
+    updateEqualSign(true);
+
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "양변 접시에 알맞은 수를 입력해 완전제곱식을 만드세요 (모르면 힌트 클릭!)";
+
+    setHintContent(
+      `<span class="prompt-tag">👩‍🏫 선생님의 발문</span> 오른쪽 <strong>완전제곱식 넓이 모델</strong>을 관찰해 보세요! 빈 모서리를 채워 정사각형을 완성하려면 양변 접시에 어떤 수를 똑같이 더해야 할까요?`,
+      "2단계 선생님의 발문 · 힌트 보기",
+      false,
+      false
+    );
+  }
+
+  function updateEqualSign(isEqual) {
+    if (isEqual) {
+      eqSignBox.innerText = "=";
+      eqSignBox.className = "eq-sign-box equal";
+      eqSignBox.title = "양변이 같음 (등식 성립)";
+    } else {
+      eqSignBox.innerText = "≠";
+      eqSignBox.className = "eq-sign-box not-equal";
+      eqSignBox.title = "양변이 같지 않음 (등호 깨짐)";
+    }
+  }
+
+  // 2단계 저울 균형 및 완전제곱식 판별
+  function checkStep2Balance() {
+    if (step !== 2) return;
+    const lVal = parseSignedInput(leftInput.value);
+    const rVal = parseSignedInput(rightInput.value);
+    const { b } = current;
+    const halfB = b / 2;
+    const targetVal = halfB * halfB;
+
+    if (isNaN(lVal)) {
+      tileCorner.innerText = "?";
+      tileCorner.className = "tile tile-corner";
+    } else if (lVal === targetVal) {
+      tileCorner.innerText = `${lVal}`;
+      tileCorner.className = "tile tile-corner filled-correct";
+    } else {
+      tileCorner.innerText = `${lVal}`;
+      tileCorner.className = "tile tile-corner filled-wrong";
+    }
+
+    if (isNaN(lVal) && isNaN(rVal)) {
+      setTilt(0);
+      updateEqualSign(true);
+      statusBadge.className = "status-badge status-neutral";
+      statusBadge.innerText = "양변 접시를 모두 채워주세요";
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (!isNaN(lVal) && isNaN(rVal)) {
+      setTilt(-8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 우변 접시에도 수를 입력해야 등식이 유지됩니다 (≠)";
+      combineBtn.style.display = "none";
+      return;
+    }
+    if (isNaN(lVal) && !isNaN(rVal)) {
+      setTilt(8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 좌변 접시에도 수를 입력해야 등식이 유지됩니다 (≠)";
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (lVal > rVal) {
+      setTilt(-8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 좌변이 더 큽니다! 양변이 같지 않습니다 (≠)";
+      setHintContent(
+        `<span class="prompt-tag">🚨 등식의 성질</span> 좌변과 우변에 더한 수가 서로 달라 등호(<strong>=</strong>)가 깨졌습니다(<strong>≠</strong>). 등식이 성립하려면 양변에 어떻게 해야 할까요?`,
+        "등식의 성질 힌트 보기",
+        false,
+        true
+      );
+      combineBtn.style.display = "none";
+    } else if (lVal < rVal) {
+      setTilt(8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "⚠️ 우변이 더 큽니다! 양변이 같지 않습니다 (≠)";
+      setHintContent(
+        `<span class="prompt-tag">🚨 등식의 성질</span> 좌변과 우변에 더한 수가 서로 달라 등호(<strong>=</strong>)가 깨졌습니다(<strong>≠</strong>). 등식이 성립하려면 양변에 어떻게 해야 할까요?`,
+        "등식의 성질 힌트 보기",
+        false,
+        true
+      );
+      combineBtn.style.display = "none";
+    } else {
+      setTilt(0);
+      updateEqualSign(true);
+      if (lVal === targetVal) {
+        statusBadge.className = "status-badge status-succ";
+        statusBadge.innerText = "✨ 저울 평형(=) & 완전제곱식 조건 완벽 만족!";
+        setHintContent(
+          `<span class="prompt-tag">🎉 2단계 성공</span> 양변에 똑같이 <strong>${targetVal}</strong>을 더해 등식(<strong>=</strong>)도 유지되고, 좌변이 완전제곱식 <strong>${formatFactor(halfB)}</strong> 으로 묶일 준비가 끝났습니다!`,
+          "2단계 완성 설명 보기",
+          false,
+          false
+        );
+        combineBtn.innerText = "🧲 완전제곱식으로 묶기 (3단계로 합체 ➔)";
+        combineBtn.style.display = "block";
+      } else {
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerText = "⚖️ 양변은 같지만(=), 좌변이 완전제곱식이 되지 않습니다";
+        setHintContent(
+          `<span class="prompt-tag">🤔 다시 생각해보기</span> 양변에 같은 수를 더해 등식(<strong>=</strong>)은 유지되었지만, 좌변이 하나의 완전제곱식 <strong>(x ± □)²</strong>으로 묶이지 않습니다. 오른쪽 넓이 모델에서 가로·세로 타일의 길이를 다시 살펴볼까요?`,
+          "완전제곱식 조건 힌트 보기",
+          false,
+          true
+        );
+        combineBtn.style.display = "none";
+      }
+    }
+  }
+
+  function setTilt(deg) {
+    beam.style.transform = `rotate(${deg}deg)`;
+    leftPlate.style.transform = `translateY(${-deg * 1.3}px)`;
+    rightPlate.style.transform = `translateY(${deg * 1.3}px)`;
+
+    if (deg < 0) {
+      leftPlate.style.borderColor = "var(--danger)";
+      rightPlate.style.borderColor = "#94a3b8";
+    } else if (deg > 0) {
+      rightPlate.style.borderColor = "var(--danger)";
+      leftPlate.style.borderColor = "#94a3b8";
+    } else {
+      leftPlate.style.borderColor = "#94a3b8";
+      rightPlate.style.borderColor = "#94a3b8";
+    }
+  }
+
+  // 2단계 -> 3단계 전환 (합체)
+  function handleCombine() {
+    step = 3;
+    updatePills(3);
+    resetHintCollapsed();
+    const { b, c } = current;
+    const halfB = b / 2;
+    const rhsTotal = -c + halfB * halfB;
+
+    scaleArea.style.display = "none";
+    combineBtn.style.display = "none";
+    solveArea.style.display = "block";
+
+    stepDesc.innerText = `[${TYPE_NAMES[currentType]}] 3단계: 제곱근의 뜻을 이용하여 해 구하기`;
+    mainEq.innerHTML = `${formatFactor(halfB)} = ${rhsTotal}`;
+    statusBadge.className = "status-badge status-succ";
+    statusBadge.innerText = "완전제곱식 완성! 스스로 해를 구해보세요 (어려우면 아래 힌트 클릭!)";
+
+    setHintContent(
+      `<span class="prompt-tag">👩‍🏫 스스로 탐구 힌트</span> 완전제곱식 <strong>${formatFactor(halfB)} = ${rhsTotal}</strong> 이 완성되었습니다! 제곱을 풀면 우변이 어떻게 되는지, 그리고 좌변에 남은 수를 이항하면 어떻게 바뀌는지 생각하여 빈칸을 채워보세요.`,
+      "3단계 스스로 탐구 힌트 보기",
+      false,
+      false
+    );
+
+    actionBtn.style.display = "block";
+    actionBtn.innerText = "✅ 정답 확인하기";
+    actionBtn.onclick = verifyFinalAnswer;
+  }
+
+  // 3단계 정답 검증
+  function verifyFinalAnswer() {
+    const { b, c } = current;
+    const halfB = b / 2;
+    const expectedPart1 = -halfB;
+    const expectedPart2 = -c + halfB * halfB;
+
+    const u1 = parseSignedInput(ansPart1.value);
+    const u2 = parseSignedInput(ansPart2.value);
+
+    if (isNaN(u1) || isNaN(u2)) {
+      statusBadge.className = "status-badge status-warn";
+      statusBadge.innerText = "두 빈칸을 모두 입력해주세요";
+      return;
+    }
+
+    if (u1 === expectedPart1 && u2 === expectedPart2) {
+      showCompletionScreen(b, c, halfB, expectedPart1, expectedPart2);
+      return;
+    }
+
+    let part1Feedback = "";
+    if (u1 !== expectedPart1) {
+      if (u1 === halfB) {
+        part1Feedback = `좌변의 상수항을 등호 반대편(우변)으로 <strong>이항할 때 부호가 어떻게 되어야 하는지</strong> 다시 확인해 보세요!`;
+      } else {
+        part1Feedback = `위쪽의 완전제곱식 <strong>${formatFactor(halfB)} = ${expectedPart2}</strong> 에서 <strong>좌변의 괄호 안에 있던 상수항이 어떤 숫자였는지</strong> 다시 한번 확인해 보세요!`;
+      }
+    }
+
+    if (u1 !== expectedPart1 && u2 === expectedPart2) {
+      statusBadge.className = "status-badge status-err";
+      if (u1 === halfB) {
+        statusBadge.innerText = "근호(√) 안의 수는 맞았어요! 이항할 때의 부호를 다시 확인해 볼까요?";
+      } else {
+        statusBadge.innerText = "근호(√) 안의 수는 맞았어요! 좌변의 상수항이 어떤 수였는지 확인해 볼까요?";
+      }
+      setHintContent(
+        `<span class="prompt-tag">🤔 상수항 점검 힌트</span> ${part1Feedback}`,
+        "오답 점검 힌트 보기",
+        false,
+        true
+      );
+    } else if (u1 === expectedPart1 && u2 !== expectedPart2) {
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "이항한 앞쪽 수는 맞았어요! 근호(√) 안의 수를 다시 살펴볼까요?";
+      setHintContent(
+        `<span class="prompt-tag">🤔 제곱근 점검 힌트</span> 제곱해서 우변의 수가 되었다면, 제곱을 풀었을 때 <strong>근호(√) 안</strong>에는 어떤 수가 들어가야 할까요? 위쪽의 완성된 등식을 다시 확인해 보세요!`,
+        "오답 점검 힌트 보기",
+        false,
+        true
+      );
+    } else {
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "다시 한번 차근차근 확인해 볼까요? (아래 힌트 버튼을 눌러보세요)";
+      setHintContent(
+        `<span class="prompt-tag">🤔 2가지 점검 힌트</span> ① <strong>앞쪽 빈칸:</strong> ${part1Feedback}<br>② <strong>근호(√) 안 빈칸:</strong> 제곱해서 우변의 수가 되려면 근호 안에 어떤 수가 들어가야 할지 다시 확인해 보세요!`,
+        "오답 점검 힌트 보기",
+        false,
+        true
+      );
+    }
+  }
+
+  // 정답 완료 전용 화면 표시
+  function showCompletionScreen(b, c, halfB, expectedPart1, expectedPart2) {
+    step = 4;
+    updatePills(4);
+
+    const sqrtVal = Math.sqrt(expectedPart2);
+    const isPerfectSquare = Number.isInteger(sqrtVal);
+    let finalAnsStr = `x = ${expectedPart1} ± √${expectedPart2}`;
+    if (isPerfectSquare) {
+      const root1 = expectedPart1 + sqrtVal;
+      const root2 = expectedPart1 - sqrtVal;
+      finalAnsStr = `x = ${expectedPart1} ± ${sqrtVal}  (즉, x = ${root1} 또는 x = ${root2})`;
+    }
+
+    topStepBox.style.display = "none";
+    topStatusWrap.style.display = "none";
+    solveArea.style.display = "none";
+    scaffoldSection.style.display = "none";
+    actionBtn.style.display = "none";
+    combineBtn.style.display = "none";
+    completeArea.style.display = "flex";
+
+    completeSummary.innerHTML = `
+      <div class="summary-item">
+        <span class="summary-label">처음 이차방정식</span>
+        <span class="summary-eq">x² ${formatBx(b)} ${formatConst(c)} = 0</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">1단계: 상수항 정리</span>
+        <span class="summary-eq">x² ${formatBx(b)} = ${-c}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">2단계: 완전제곱식</span>
+        <span class="summary-eq">${formatFactor(halfB)} = ${expectedPart2}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">3단계: 최종 해</span>
+        <span class="summary-eq final-ans">${finalAnsStr}</span>
+      </div>
+    `;
+
+    completeNote.innerText = isPerfectSquare
+      ? `✨ 근호 안의 수(${expectedPart2})가 제곱수여서 유리수(정수) 해까지 완벽하게 정리되었습니다! 아래 버튼으로 다음 문제에 도전해 보세요.`
+      : `✨ 등식의 성질과 완전제곱식을 이용해 무리수 해를 정확하게 구해냈습니다! 아래 버튼으로 다음 문제에 도전해 보세요.`;
+  }
+
+  // 초기 실행: 0단계(문제 유형 선택)로 시작
+  goToStep0();
+</script>
+</body>
+</html>
