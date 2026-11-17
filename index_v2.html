@@ -1,0 +1,3808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>등식 저울과 괄호 결합기 v2 - 완전제곱식 식조작 랩</title>
+  <!-- KaTeX (LaTeX 수식 렌더링 라이브러리) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #dbeafe;
+      --success: #16a34a;
+      --success-dark: #15803d;
+      --success-light: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --prompt-bg: #fff1f2;
+      --prompt-border: #e11d48;
+      --prompt-text: #881337;
+      --chalk-bg: #14532d;
+      --chalk-dark: #0f3d22;
+      --chalk-frame: #78350f;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Pretendard", "Malgun Gothic", sans-serif;
+    }
+
+    .katex {
+      font-size: 1.08em;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px 14px;
+    }
+
+    .container {
+      max-width: 1080px;
+      width: 100%;
+      height: 100%;
+      max-height: 790px;
+      background: var(--card);
+      border-radius: 20px;
+      padding: 14px 22px;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .container.hard-theme {
+      background: #0f172a;
+      color: #f8fafc;
+      border: 2px solid #334155;
+    }
+
+    :fullscreen body {
+      padding: 14px 20px;
+    }
+    :fullscreen .container {
+      max-width: 1240px;
+      max-height: 96vh;
+      padding: 20px 30px;
+    }
+
+    /* 상단 헤더 */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 7px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .container.hard-theme .header-bar {
+      border-bottom-color: #334155;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .container.hard-theme h2 {
+      color: #f8fafc;
+    }
+
+    .mode-badge {
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 900;
+      border-radius: 20px;
+      background: #dcfce7;
+      color: #166534;
+      border: 1.5px solid #86efac;
+    }
+
+    .mode-badge.demo {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-color: #93c5fd;
+    }
+
+    .mode-badge.hard {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #fca5a5;
+      box-shadow: 0 0 12px rgba(220, 38, 38, 0.45);
+    }
+
+    /* 상단 '하드 모드' 버튼 & 스탬프 표시 */
+    .btn-top-hard {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: #fff1f2;
+      border: 2px solid #f43f5e;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #be123c;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-top-hard:hover {
+      background: #ffe4e6;
+      transform: translateY(-1px);
+    }
+
+    .btn-top-hard.unlocked {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #fef08a;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+    }
+
+    .container.hard-theme .btn-top-hard {
+      background: #1e293b;
+      border-color: #ef4444;
+      color: #fecaca;
+    }
+
+    .hard-count-pill {
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(220, 38, 38, 0.12);
+      color: #b91c1c;
+      font-weight: 900;
+      font-size: 11.5px;
+    }
+
+    .btn-top-hard.unlocked .hard-count-pill,
+    .container.hard-theme .hard-count-pill {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    /* 교사 모드 전용 3가지 모드 전환 바 */
+    .teacher-mode-bar {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(90deg, #eff6ff 0%, #f5f3ff 100%);
+      border: 2px solid #818cf8;
+      border-radius: 12px;
+      padding: 5px 12px;
+      margin-top: 4px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .container.hard-theme .teacher-mode-bar {
+      background: #1e293b;
+      border-color: #6366f1;
+    }
+
+    .teacher-bar-label {
+      font-size: 13px;
+      font-weight: 900;
+      color: #3730a3;
+      margin-right: 4px;
+    }
+
+    .container.hard-theme .teacher-bar-label {
+      color: #c7d2fe;
+    }
+
+    .btn-teacher-tab {
+      padding: 5px 12px;
+      font-size: 12.5px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+
+    .btn-teacher-tab:hover {
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    .btn-teacher-tab.active {
+      background: #4f46e5;
+      color: #ffffff;
+      border-color: #4338ca;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .student-badge {
+      padding: 5px 10px;
+      font-size: 12.5px;
+      font-weight: 800;
+      border-radius: 8px;
+      background: #f0fdf4;
+      color: #166534;
+      border: 1.5px solid #86efac;
+      cursor: pointer;
+      transition: 0.18s;
+    }
+
+    .student-badge.teacher-badge {
+      background: #eef2ff;
+      color: #3730a3;
+      border-color: #818cf8;
+    }
+
+    .btn-sheet-config {
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      cursor: pointer;
+    }
+
+    .btn-fullscreen {
+      padding: 5px 10px;
+      font-size: 12.5px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 2px solid #94a3b8;
+      background: #1e293b;
+      color: #ffffff;
+      cursor: pointer;
+    }
+
+    /* 진행 단계 표시줄 */
+    .progress-steps {
+      display: flex;
+      gap: 8px;
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    .step-pill {
+      flex: 1;
+      text-align: center;
+      padding: 6px 6px;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #64748b;
+      border: 2px solid transparent;
+      transition: 0.2s;
+      white-space: nowrap;
+    }
+
+    .container.hard-theme .step-pill {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+
+    .step-pill.active {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-color: #60a5fa;
+    }
+
+    .step-pill.hard-active {
+      background: #450a0a;
+      color: #fecaca;
+      border-color: #ef4444;
+    }
+
+    .step-pill.done {
+      background: var(--success-light);
+      color: var(--success);
+      border-color: #86efac;
+    }
+
+    /* 메인 수식 박스 */
+    .step-box {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      padding: 6px 16px;
+      border-radius: 12px;
+      text-align: center;
+      flex-shrink: 0;
+      transition: 0.3s;
+    }
+
+    .container.hard-theme .step-box {
+      background: #14532d;
+      border: 3px solid #78350f;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    .step-title {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .container.hard-theme .step-title {
+      color: #bbf7d0;
+    }
+
+    .eq-display {
+      font-size: 26px;
+      font-weight: 900;
+      color: #0f172a;
+      margin: 0;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .container.hard-theme .eq-display {
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    }
+
+    /* 상단 상태 배지 & 힌트 버튼 바 */
+    .top-feedback-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 4px 0 2px;
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 13.5px;
+      transition: 0.2s;
+    }
+
+    .status-neutral { background: #e2e8f0; color: #334155; }
+    .status-err { background: var(--danger-light); color: var(--danger); border: 1.5px solid #fca5a5; }
+    .status-warn { background: var(--warning-light); color: #b45309; border: 1.5px solid #fcd34d; }
+    .status-succ { background: var(--success-light); color: var(--success); border: 1.5px solid #86efac; }
+
+    .btn-hint-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 5px 14px;
+      font-size: 13.5px;
+      font-weight: 800;
+      border-radius: 20px;
+      border: 2px solid var(--prompt-border);
+      background: #fff1f2;
+      color: var(--prompt-text);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 3px 10px rgba(225, 29, 72, 0.14);
+    }
+
+    .btn-hint-toggle:hover {
+      background: #ffe4e6;
+      transform: translateY(-1px);
+    }
+
+    .btn-hint-toggle.has-alert {
+      background: var(--prompt-border);
+      color: #ffffff;
+      animation: pulseHint 1.4s infinite;
+    }
+
+    .btn-hint-toggle.locked-hard {
+      background: #334155;
+      color: #cbd5e1;
+      border-color: #64748b;
+      cursor: not-allowed;
+      box-shadow: none;
+      animation: none;
+    }
+
+    @keyframes pulseHint {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.45); }
+      50% { box-shadow: 0 0 0 8px rgba(225, 29, 72, 0); }
+    }
+
+    /* 교사의 발문 & 비계 안내창 */
+    .hint-card {
+      display: none;
+      background: var(--prompt-bg);
+      border: 2.5px solid #fda4af;
+      border-left: 10px solid var(--prompt-border);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--prompt-text);
+      line-height: 1.42;
+      box-shadow: 0 4px 14px rgba(225, 29, 72, 0.12);
+      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    .hint-card.open {
+      display: block;
+    }
+
+    .prompt-tag {
+      display: inline-block;
+      background: var(--prompt-border);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* 중앙 가변 워크스페이스 영역 */
+    .middle-stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin: 4px 0;
+    }
+
+    /* [교사 예시 시연 모드 전용] 0단계: 4가지 문제 유형 선택 그리드 */
+    .step0-area {
+      display: none;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-height: 100%;
+    }
+
+    .type-card {
+      background: #ffffff;
+      border: 2.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .type-card:hover {
+      border-color: var(--primary);
+      background: #eff6ff;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.14);
+    }
+
+    .type-card.random-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      border-color: #a78bfa;
+      flex-direction: row;
+      gap: 14px;
+      padding: 12px 20px;
+    }
+
+    .type-card-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .type-card-badge.purple {
+      background: var(--purple);
+      color: #ffffff;
+      font-size: 13px;
+      padding: 4px 12px;
+    }
+
+    .type-card-title {
+      font-size: 17.5px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .type-card-desc {
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* 1단계 & 2단계 워크스페이스: 저울 + 기하 넓이 모델 */
+    .workspace-grid {
+      display: none;
+      width: 100%;
+      height: 100%;
+      max-height: 250px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .workspace-grid.step1-mode {
+      grid-template-columns: 1fr;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .workspace-grid.step2-mode {
+      grid-template-columns: 1.35fr 0.85fr;
+    }
+
+    /* 저울 그래픽 */
+    .scale-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 14px 8px;
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+    }
+
+    .plates {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 550px;
+      margin-bottom: 8px;
+      z-index: 2;
+      gap: 10px;
+    }
+
+    .plate {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 8px 8px;
+      text-align: center;
+      border: 2.5px solid #94a3b8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
+    }
+
+    .plate-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 800;
+    }
+
+    .plate-expr {
+      font-size: 18.5px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .plate-sub-result {
+      margin-top: 4px;
+      font-size: 12.5px;
+      font-weight: 800;
+      min-height: 18px;
+      color: var(--muted);
+    }
+
+    .strike-cancel {
+      text-decoration: line-through;
+      text-decoration-thickness: 2.5px;
+      text-decoration-color: var(--danger);
+      color: #94a3b8;
+      background: #fee2e2;
+      padding: 1px 6px;
+      border-radius: 5px;
+      display: inline-block;
+    }
+
+    .eq-sign-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #1e293b;
+      border: 2.5px solid #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      flex: none;
+      transition: all 0.25s ease;
+    }
+
+    .eq-sign-box.equal {
+      background: var(--success-light);
+      color: var(--success);
+      border-color: #22c55e;
+    }
+
+    .eq-sign-box.not-equal {
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: #ef4444;
+      transform: scale(1.08);
+    }
+
+    .scale-beam {
+      width: 350px;
+      max-width: 88%;
+      height: 8px;
+      background: #334155;
+      border-radius: 4px;
+      position: relative;
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center center;
+    }
+
+    .scale-fulcrum {
+      width: 0;
+      height: 0;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-bottom: 24px solid #1e293b;
+      margin-top: -2px;
+    }
+
+    .scale-base {
+      width: 96px;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 3px;
+    }
+
+    /* 넓이 모델 (대수타일) */
+    .geo-card {
+      background: #f8fafc;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .geo-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 5px;
+    }
+
+    .area-grid {
+      display: grid;
+      grid-template-columns: 106px 60px;
+      grid-template-rows: 106px 60px;
+      gap: 5px;
+      padding: 6px;
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      border-radius: 6px;
+      font-size: 18px;
+      transition: 0.25s;
+    }
+
+    .tile-x2 { background: #bfdbfe; color: #1e40af; border: 2.5px solid #60a5fa; }
+    .tile-bx { background: #bbf7d0; color: #166534; border: 2.5px solid #4ade80; font-size: 15px; }
+    .tile-corner { background: #ffffff; color: #64748b; border: 2.5px dashed #94a3b8; font-size: 16px; }
+    .tile-corner.filled-correct { background: #fef08a; color: #854d0e; border: 2.5px solid #eab308; transform: scale(1.04); }
+    .tile-corner.filled-wrong { background: #fecaca; color: #991b1b; border: 2.5px dashed #ef4444; }
+
+    /* 입력창 공통 */
+    .input-box {
+      width: 62px;
+      height: 36px;
+      padding: 3px 5px;
+      font-size: 18px;
+      text-align: center;
+      border: 2.5px solid #64748b;
+      border-radius: 8px;
+      font-weight: 900;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .input-box:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+    }
+
+    /* 노말 모드 3단계 해 구하기 입력 영역 */
+    .solve-area {
+      display: none;
+      width: 100%;
+      max-width: 660px;
+      background: #f8fafc;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .solve-guide {
+      font-size: 15.5px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .solve-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 25px;
+      font-weight: 900;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .radical-group {
+      display: inline-flex;
+      align-items: stretch;
+    }
+
+    .radical-symbol {
+      font-family: "KaTeX_Main", "Times New Roman", serif;
+      font-size: 34px;
+      line-height: 1;
+      font-weight: normal;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      margin-right: -2px;
+      user-select: none;
+    }
+
+    .sqrt-wrap {
+      display: inline-flex;
+      align-items: center;
+      border-top: 2.5px solid #0f172a;
+      padding: 4px 4px 0 4px;
+    }
+
+    /* ============================================================================
+       🔥 하드 모드 전용: 초록색 칠판 + 자유 수식 타이핑(실시간 LaTeX 렌더링 & 보조기호 버튼) + 흰색 분필 필기
+       ============================================================================ */
+    .hard-chalkboard {
+      display: none;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, var(--chalk-bg) 0%, var(--chalk-dark) 100%);
+      border: 6px solid var(--chalk-frame);
+      border-radius: 16px;
+      padding: 8px 14px;
+      color: #ffffff;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    .chalk-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      border-bottom: 1.5px dashed rgba(255, 255, 255, 0.25);
+      padding-bottom: 5px;
+      flex-shrink: 0;
+    }
+
+    .chalk-tools-left,
+    .chalk-tools-right {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .btn-chalk-tool {
+      padding: 4px 11px;
+      font-size: 12.5px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .btn-chalk-tool:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .btn-chalk-tool.active {
+      background: #ffffff;
+      color: #14532d;
+      border-color: #fef08a;
+      box-shadow: 0 0 8px rgba(254, 240, 138, 0.5);
+    }
+
+    .btn-chalk-tool:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    .chalk-history-btns {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 4px;
+    }
+
+    /* 키보드로 치기 어려운 수식 기호 보조 버튼 바 (그냥 x², x 등이 써있고 누르면 커서 위치에 입력됨!) */
+    .latex-helper-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .helper-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #bbf7d0;
+      margin-right: 2px;
+    }
+
+    .btn-symbol-assist {
+      min-width: 42px;
+      height: 30px;
+      padding: 2px 11px;
+      font-size: 15px;
+      font-weight: 900;
+      border-radius: 8px;
+      border: 1.5px solid #fef08a;
+      background: rgba(254, 240, 138, 0.16);
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.15s;
+    }
+
+    .btn-symbol-assist:hover {
+      background: rgba(254, 240, 138, 0.32);
+      transform: translateY(-1px);
+    }
+
+    .btn-symbol-assist:active {
+      transform: scale(0.96);
+    }
+
+    /* 칠판 중앙 워크스페이스: 타이핑한 수식이 실시간 LaTeX(KaTeX)으로 렌더링되는 영역 + 분필 필기 캔버스 */
+    .chalk-work-wrap {
+      flex: 1;
+      min-height: 135px;
+      position: relative;
+      background: rgba(0, 0, 0, 0.12);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: text;
+    }
+
+    /* 실제 키보드 타이핑(숫자, +, -, =, 괄호, 엔터, 백스페이스 등)을 받는 투명 입력창 */
+    .chalk-hidden-textarea {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+      left: 10px;
+      top: 10px;
+    }
+
+    /* 타이핑된 줄들이 실시간으로 LaTeX(KaTeX) 수식으로 렌더링되어 보이는 칠판 보드 */
+    .chalk-latex-board {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 10px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 2;
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .chalk-rendered-line {
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: background 0.12s;
+    }
+
+    .chalk-rendered-line.active-line {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    /* 칠판 위 깜빡이는 흰색 분필 커서 */
+    .chalk-caret {
+      display: inline-block;
+      width: 2.5px;
+      height: 24px;
+      background: #fef08a;
+      margin: 0 2px;
+      vertical-align: middle;
+      animation: blinkCaret 0.95s steps(1) infinite;
+    }
+
+    @keyframes blinkCaret {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .chalk-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .chalk-canvas.typing-pass {
+      pointer-events: none;
+    }
+
+    /* 칠판 하단 최종 답 도출 틀 영역 */
+    .chalk-answer-bar {
+      background: rgba(0, 0, 0, 0.28);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 12px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .chalk-ans-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chalk-ans-label {
+      font-size: 14px;
+      font-weight: 900;
+      color: #fef08a;
+    }
+
+    .btn-frame-switch {
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      border-radius: 8px;
+      border: 1.5px solid #fef08a;
+      background: rgba(254, 240, 138, 0.15);
+      color: #fef08a;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .chalk-input-box {
+      width: 56px;
+      height: 32px;
+      padding: 2px 4px;
+      font-size: 17px;
+      font-weight: 900;
+      text-align: center;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.12);
+      border: 2.5px solid #ffffff;
+      border-radius: 7px;
+    }
+
+    .chalk-input-box::placeholder {
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .chalk-input-box:focus {
+      outline: none;
+      border-color: #fef08a;
+      background: rgba(254, 240, 138, 0.18);
+    }
+
+    .chalk-ans-formula {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #ffffff;
+      margin: 0 auto;
+    }
+
+    .fraction-box {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      vertical-align: middle;
+    }
+
+    .fraction-line {
+      width: 100%;
+      min-width: 58px;
+      height: 2.5px;
+      background: #ffffff;
+      border-radius: 2px;
+    }
+
+    .chalk-radical-symbol {
+      font-family: "KaTeX_Main", "Times New Roman", serif;
+      font-size: 34px;
+      line-height: 1;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      margin-right: -2px;
+      user-select: none;
+    }
+
+    .chalk-radical-symbol.tall-frac {
+      font-size: 54px;
+    }
+
+    .chalk-sqrt-wrap {
+      display: inline-flex;
+      align-items: center;
+      border-top: 2.5px solid #ffffff;
+      padding: 4px 5px 0 5px;
+    }
+
+    /* 완료 화면 */
+    .complete-area {
+      display: none;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 3px solid #22c55e;
+      border-radius: 18px;
+      padding: 14px 20px;
+      text-align: center;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(22, 163, 74, 0.14);
+      color: #0f172a;
+    }
+
+    .complete-area.hard-unlock-celebrate {
+      background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+      border-color: #ef4444;
+      box-shadow: 0 8px 28px rgba(220, 38, 38, 0.25);
+    }
+
+    .complete-badge {
+      background: #16a34a;
+      color: #ffffff;
+      font-size: 13.5px;
+      font-weight: 900;
+      padding: 4px 16px;
+      border-radius: 20px;
+    }
+
+    .complete-badge.red-badge {
+      background: #dc2626;
+    }
+
+    .complete-title {
+      font-size: 20.5px;
+      font-weight: 900;
+      color: #14532d;
+      margin: 0;
+    }
+
+    .complete-area.hard-unlock-celebrate .complete-title {
+      color: #991b1b;
+    }
+
+    .complete-steps-summary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: #ffffff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 2px solid #86efac;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 3px 8px;
+    }
+
+    .summary-label {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    .summary-eq {
+      font-size: 17px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .summary-eq.final-ans {
+      color: #15803d;
+      font-size: 19px;
+      background: #dcfce7;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .summary-arrow {
+      font-size: 17px;
+      font-weight: 900;
+      color: #22c55e;
+    }
+
+    .log-status-msg {
+      font-size: 12px;
+      font-weight: 700;
+      color: #15803d;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 3px 12px;
+      border-radius: 12px;
+    }
+
+    /* 하단 컨트롤 바 */
+    .btn-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+      flex-shrink: 0;
+      min-height: 50px;
+    }
+
+    .left-sub-btns {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .right-main-btns {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+      gap: 10px;
+    }
+
+    button.sub-btn {
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 800;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.18s;
+      border: none;
+    }
+
+    .btn-reset {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .btn-reroll {
+      background: #f3e8ff;
+      color: #6d28d9;
+      border: 1.5px solid #d8b4fe !important;
+    }
+
+    button.main-step-btn {
+      padding: 11px 24px;
+      font-size: 18px;
+      font-weight: 900;
+      border: 3px solid #ffffff;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-next-blink {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: #ffffff;
+      display: none;
+      animation: blinkStepBtn 1.1s infinite ease-in-out;
+    }
+
+    .btn-hard-red {
+      background: linear-gradient(135deg, #ff1e1e 0%, #dc2626 55%, #991b1b 100%) !important;
+      color: #ffffff !important;
+      border: 3px solid #fef08a !important;
+      animation: blinkRedHardBtn 0.9s infinite ease-in-out !important;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-check-ans {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      display: none;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-check-ans.ready-blink {
+      animation: blinkBlueBtn 1.1s infinite ease-in-out;
+    }
+
+    @keyframes blinkStepBtn {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7), 0 6px 18px rgba(22, 163, 74, 0.35);
+        border-color: #bbf7d0;
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 0 0 10px rgba(22, 163, 74, 0), 0 8px 24px rgba(22, 163, 74, 0.55);
+        border-color: #fef08a;
+      }
+    }
+
+    @keyframes blinkRedHardBtn {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85), 0 6px 22px rgba(220, 38, 38, 0.6);
+        border-color: #fef08a;
+      }
+      50% {
+        transform: scale(1.06);
+        box-shadow: 0 0 0 14px rgba(239, 68, 68, 0), 0 10px 30px rgba(220, 38, 38, 0.85);
+        border-color: #ffffff;
+      }
+    }
+
+    @keyframes blinkBlueBtn {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7), 0 6px 18px rgba(37, 99, 235, 0.35);
+        border-color: #bfdbfe;
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 0 0 10px rgba(37, 99, 235, 0), 0 8px 24px rgba(37, 99, 235, 0.55);
+        border-color: #fef08a;
+      }
+    }
+
+    .enter-key-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.22);
+      border: 1.5px solid rgba(255, 255, 255, 0.65);
+      padding: 1px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-left: 7px;
+      vertical-align: middle;
+    }
+
+    /* 모달 오버레이 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 18px;
+      max-width: 540px;
+      width: 100%;
+      padding: 22px 26px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+      border: 2px solid #e2e8f0;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .modal-desc {
+      margin: 0 0 14px;
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 17px;
+      font-weight: 800;
+      border: 2.5px solid #94a3b8;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-modal {
+      padding: 9px 16px;
+      font-size: 14.5px;
+      font-weight: 800;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-modal-primary { background: var(--primary); color: #ffffff; }
+    .btn-modal-secondary { background: #e2e8f0; color: #334155; }
+
+    .code-snippet {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: Consolas, monospace;
+      font-size: 11.5px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 8px 0 12px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container" id="appContainer">
+  <!-- 상단 헤더: 제목 + 현재 모드 배지 + '🔥 하드 모드' 버튼 + 학번/교사 배지 + 데이터 설정 + 전체화면 -->
+  <div class="header-bar">
+    <div class="title-wrap">
+      <h2>⚖️ 등식 저울과 괄호 결합기</h2>
+      <span class="mode-badge" id="modeBadge">🟢 노말 모드</span>
+      <button type="button" class="btn-top-hard" id="topHardBtn" onclick="onTopHardBtnClick()" title="노말 모드에서 힌트 없이 3문제를 클리어하면 하드 모드로 이동할 수 있습니다!">
+        <span id="topHardBtnLabel">🔥 하드 모드 (⚪⚪⚪ 0/3)</span>
+        <span class="hard-count-pill" id="hardCountPill">클리어: 0</span>
+      </button>
+    </div>
+    <div class="header-right">
+      <button type="button" class="student-badge" id="studentPinBadge" onclick="openPinModal()" title="클릭하여 학번/PIN 번호 변경">
+        👤 학번/PIN: 미입력
+      </button>
+      <button type="button" class="btn-sheet-config" id="sheetConfigBtn" style="display:none;" onclick="openSheetModal()" title="구글 스프레드시트 연동 및 기록 다운로드">
+        📊 데이터 수집 설정
+      </button>
+      <button type="button" class="btn-fullscreen" id="fullscreenBtn" onclick="toggleFullScreen()">⛶ 전체화면</button>
+    </div>
+  </div>
+
+  <!-- 👨‍🏫 교사 모드 전용 3가지 모드 전환 바 ('lmagic3078' 입력 시 활성화) -->
+  <div class="teacher-mode-bar" id="teacherModeBar">
+    <span class="teacher-bar-label">👨‍🏫 교사 모드 전환:</span>
+    <button type="button" class="btn-teacher-tab" id="tabTeacherDemo" onclick="switchTeacherMode('demo')">
+      1️⃣ 수업 예시 시연 모드 (유형 1~4 선택)
+    </button>
+    <button type="button" class="btn-teacher-tab active" id="tabTeacherNormal" onclick="switchTeacherMode('normal')">
+      2️⃣ 노말 모드 (통합 쌩랜덤)
+    </button>
+    <button type="button" class="btn-teacher-tab" id="tabTeacherHard" onclick="switchTeacherMode('hard')">
+      3️⃣ 하드 모드 (칠판 실전)
+    </button>
+  </div>
+
+  <!-- 노말 & 예시 시연 모드 단계 진행 표시줄 (하드 모드에서는 표시하지 않음) -->
+  <div class="progress-steps" id="normalProgressSteps">
+    <div class="step-pill" id="pill0" style="display:none;">0단계: 유형 선택</div>
+    <div class="step-pill active" id="pill1">1단계: 상수항 정리</div>
+    <div class="step-pill" id="pill2">2단계: 완전제곱식 만들기</div>
+    <div class="step-pill" id="pill3">3단계: 해 구하기</div>
+    <div class="step-pill" id="pill4">🎉 풀이 완료</div>
+  </div>
+
+  <!-- 메인 방정식 표시 -->
+  <div class="step-box" id="topStepBox">
+    <div class="step-title" id="stepDesc">1단계: 양변에 같은 수를 더하거나 빼서 좌변의 상수항 없애기</div>
+    <div class="eq-display" id="mainEq"></div>
+  </div>
+
+  <!-- 상단 피드백 바: 상태 배지 + 선생님의 발문·힌트 보기 버튼 -->
+  <div class="top-feedback-row" id="topStatusWrap">
+    <div id="statusBadge" class="status-badge status-neutral"></div>
+    <button type="button" class="btn-hint-toggle" id="hintToggleBtn" onclick="toggleHintBox()">
+      💡 선생님의 발문 · 힌트 보기
+    </button>
+  </div>
+
+  <!-- 선생님의 발문 & 비계 안내창 -->
+  <div class="hint-card" id="hintBox"></div>
+
+  <!-- 중앙 인터랙티브 영역 -->
+  <div class="middle-stage">
+    <!-- [교사 예시 시연 모드 전용 0단계] 4가지 유형 카드 + 완전 랜덤 카드 -->
+    <div class="step0-area" id="step0Area">
+      <div class="type-card" onclick="selectDemoProblemType(0)">
+        <span class="type-card-badge">유형 1</span>
+        <div class="type-card-title">기본형 (양수 일차항)</div>
+        <div class="type-card-desc">일차항의 계수가 양수인 기본적인 이차방정식</div>
+      </div>
+      <div class="type-card" onclick="selectDemoProblemType(1)">
+        <span class="type-card-badge">유형 2</span>
+        <div class="type-card-title">음수 일차항</div>
+        <div class="type-card-desc">일차항의 계수가 음수여서 부호에 주의해야 하는 방정식</div>
+      </div>
+      <div class="type-card" onclick="selectDemoProblemType(2)">
+        <span class="type-card-badge">유형 3</span>
+        <div class="type-card-title">응용형</div>
+        <div class="type-card-desc">계수와 상수항의 절댓값이 조금 더 큰 응용 방정식</div>
+      </div>
+      <div class="type-card" onclick="selectDemoProblemType(3)">
+        <span class="type-card-badge">유형 4</span>
+        <div class="type-card-title">정수 해 유형</div>
+        <div class="type-card-desc">근호가 깔끔하게 정리되어 정수 해가 나오는 방정식</div>
+      </div>
+      <div class="type-card random-card" onclick="selectDemoProblemType(4)">
+        <span class="type-card-badge purple">🎲 완전 랜덤 도전</span>
+        <div style="text-align: left;">
+          <div class="type-card-title" style="color: #4c1d95;">유형 무작위 출제 (유형 1 ~ 4 통합 쌩랜덤)</div>
+          <div class="type-card-desc" style="color: #5b21b6;">유형을 알려주지 않고 해가 존재하며 식조작이 필요한 방정식이 무작위로 출제됩니다!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- [노말 & 시연 모드 1·2단계] 저울 + 정사각형 넓이 모델 워크스페이스 -->
+    <div class="workspace-grid" id="scaleArea">
+      <div class="scale-container">
+        <div class="plates">
+          <div class="plate" id="leftPlate">
+            <div class="plate-label">좌변 접시</div>
+            <div class="plate-expr">
+              <span id="leftExprText"></span>
+              <span id="leftOpSign"></span>
+              <input type="text" inputmode="numeric" id="leftInput" class="input-box" placeholder="?">
+            </div>
+            <div class="plate-sub-result" id="leftSubResult"></div>
+          </div>
+
+          <div class="eq-sign-box equal" id="eqSignBox" title="등호 상태"></div>
+
+          <div class="plate" id="rightPlate">
+            <div class="plate-label">우변 접시</div>
+            <div class="plate-expr">
+              <span id="rightExprText"></span>
+              <span id="rightOpSign"></span>
+              <input type="text" inputmode="numeric" id="rightInput" class="input-box" placeholder="?">
+            </div>
+            <div class="plate-sub-result" id="rightSubResult"></div>
+          </div>
+        </div>
+        <div class="scale-beam" id="beam"></div>
+        <div class="scale-fulcrum"></div>
+        <div class="scale-base"></div>
+      </div>
+
+      <div class="geo-card" id="geoCard">
+        <div class="geo-title">📐 완전제곱식 넓이 모델</div>
+        <div class="area-grid">
+          <div class="tile tile-x2">
+            <span id="tileX2Main"></span>
+            <small id="tileX2Sub" style="font-weight:700; font-size:12px; margin-top:2px;"></small>
+          </div>
+          <div class="tile tile-bx" id="tileRight"></div>
+          <div class="tile tile-bx" id="tileBottom"></div>
+          <div class="tile tile-corner" id="tileCorner">?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- [노말 & 시연 모드 3단계] 학생 직접 해 입력 -->
+    <div class="solve-area" id="solveArea">
+      <div class="solve-guide" id="solveGuideText"></div>
+      <div class="solve-row">
+        <span id="solveXEquals"></span>
+        <input type="text" inputmode="numeric" id="ansPart1" class="input-box" placeholder="?">
+        <span id="solvePlusMinus"></span>
+        <span class="radical-group">
+          <span class="radical-symbol">&radic;</span>
+          <span class="sqrt-wrap">
+            <input type="text" inputmode="numeric" id="ansPart2" class="input-box" placeholder="?">
+          </span>
+        </span>
+      </div>
+      <div style="font-size: 14px; color: var(--muted); font-weight: 600;">
+        ※ 첫 번째 칸에는 이항된 수를, 근호 안에는 제곱하기 전의 수를 넣고 <strong>Enter</strong>를 눌러보세요.
+      </div>
+    </div>
+
+    <!-- [🔥 하드 모드 전용] 깔끔한 초록색 칠판 + 자유 수식 타이핑(실시간 LaTeX 렌더링 & 보조기호 버튼) + 분필 필기 -->
+    <div class="hard-chalkboard" id="hardArea">
+      <div class="chalk-toolbar">
+        <!-- 왼쪽: 수식 타이핑 / 흰색 분필 필기 / 지우개 -->
+        <div class="chalk-tools-left">
+          <button type="button" class="btn-chalk-tool active" id="btnTypeMode" onclick="setChalkTool('type')">⌨️ 수식 타이핑</button>
+          <button type="button" class="btn-chalk-tool" id="btnDrawMode" onclick="setChalkTool('draw')">✏️ 흰색 분필 필기</button>
+          <button type="button" class="btn-chalk-tool" id="btnEraserMode" onclick="setChalkTool('erase')">🧽 지우개</button>
+          <button type="button" class="btn-chalk-tool" onclick="clearChalkboard()">🗑️ 전체 지우기</button>
+        </div>
+
+        <!-- 오른쪽: 수식 기호 보조버튼(필기 탭에선 숨김) + 가장 오른쪽에 이전/이후(Undo/Redo) 버튼 배치 -->
+        <div class="chalk-tools-right" style="margin-left: auto;">
+          <div class="latex-helper-btns" id="latexHelperBar">
+            <span class="helper-label">수식 기호:</span>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('x²')" title="커서 위치에 x² 입력">
+              <span id="btnTexX2"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('x')" title="커서 위치에 x 입력">
+              <span id="btnTexX"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('²')" title="커서 위치에 제곱(²) 입력">
+              <span id="btnTexSup2"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('(')" title="여는 괄호 ( 입력">
+              <span id="btnTexOpenP"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol(')')" title="닫는 괄호 ) 입력">
+              <span id="btnTexCloseP"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('+')" title="더하기(+) 입력">
+              <span id="btnTexPlus"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('-')" title="빼기(-) 입력">
+              <span id="btnTexMinus"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('±')" title="플러스마이너스(±) 입력">
+              <span id="btnTexPm"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('=')" title="등호(=) 입력">
+              <span id="btnTexEq"></span>
+            </button>
+            <button type="button" class="btn-symbol-assist" onmousedown="event.preventDefault(); insertChalkSymbol('√')" title="근호(√) 입력 - 괄호 없이 바로 숫자를 입력하면 근호 안으로 들어갑니다">
+              <span id="btnTexSqrt"></span>
+            </button>
+          </div>
+          <div class="chalk-history-btns">
+            <button type="button" class="btn-chalk-tool" id="btnUndoChalk" onmousedown="event.preventDefault(); undoChalk()" title="한 스텝 이전으로 돌아가기 (Ctrl+Z)">↩️ 이전</button>
+            <button type="button" class="btn-chalk-tool" id="btnRedoChalk" onmousedown="event.preventDefault(); redoChalk()" title="한 스텝 이후로 돌아가기 (Ctrl+Y)">↪️ 이후</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 칠판 중앙 워크스페이스: 숫자·더하기·빼기·계수는 키보드로 자유롭게 치고, 칠판에는 실시간 LaTeX 수식으로 렌더링! -->
+      <div class="chalk-work-wrap" id="chalkWorkWrap" onclick="focusChalkTyping()">
+        <textarea id="chalkHiddenInput" class="chalk-hidden-textarea" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+        <div class="chalk-latex-board" id="chalkLatexBoard"></div>
+        <canvas id="chalkCanvas" class="chalk-canvas typing-pass"></canvas>
+      </div>
+
+      <!-- 칠판 하단 최종 답 입력 틀 (정수형 틀 / 분모·분자 네모칸 분수형 틀) -->
+      <div class="chalk-answer-bar">
+        <div class="chalk-ans-left">
+          <span class="chalk-ans-label">🎯 최종 답의 틀:</span>
+          <button type="button" class="btn-frame-switch" id="frameToggleBtn" onclick="toggleHardAnswerFrame()">
+            ➗ 분수 입력 틀(분자/분모)로 전환
+          </button>
+        </div>
+
+        <!-- 1) 정수형 답 틀: x = □ ± √□ -->
+        <div class="chalk-ans-formula" id="hardIntFrame">
+          <span id="hardIntXEq"></span>
+          <input type="text" inputmode="numeric" id="hardInt1" class="chalk-input-box" placeholder="□">
+          <span id="hardIntPm"></span>
+          <span class="radical-group">
+            <span class="chalk-radical-symbol">&radic;</span>
+            <span class="chalk-sqrt-wrap">
+              <input type="text" inputmode="numeric" id="hardInt2" class="chalk-input-box" placeholder="□">
+            </span>
+          </span>
+        </div>
+
+        <!-- 2) 분수형 답 틀 (분모·분자 모두 네모칸): x = (□/□) ± √(□/□) -->
+        <div class="chalk-ans-formula" id="hardFracFrame" style="display:none;">
+          <span id="hardFracXEq"></span>
+          <div class="fraction-box" title="앞쪽 분수의 분자와 분모를 각각 입력하세요">
+            <input type="text" inputmode="numeric" id="hardFracNum1" class="chalk-input-box" placeholder="분자">
+            <div class="fraction-line"></div>
+            <input type="text" inputmode="numeric" id="hardFracDen1" class="chalk-input-box" placeholder="분모">
+          </div>
+          <span id="hardFracPm"></span>
+          <span class="radical-group">
+            <span class="chalk-radical-symbol tall-frac">&radic;</span>
+            <span class="chalk-sqrt-wrap">
+              <div class="fraction-box" title="근호 안 분수의 분자와 분모를 각각 입력하세요">
+                <input type="text" inputmode="numeric" id="hardFracNum2" class="chalk-input-box" placeholder="분자">
+                <div class="fraction-line"></div>
+                <input type="text" inputmode="numeric" id="hardFracDen2" class="chalk-input-box" placeholder="분모">
+              </div>
+            </span>
+          </span>
+        </div>
+
+        <div style="font-size:12px; color:#bbf7d0; font-weight:700;">
+          빈칸 입력 후 <strong>Enter ↵</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 완료 화면 -->
+    <div class="complete-area" id="completeArea">
+      <span class="complete-badge" id="completeBadge">🏆 MISSION CLEAR</span>
+      <h3 class="complete-title" id="completeTitle">🎉 정답입니다! 완전제곱식 풀이를 완벽히 마스터했어요!</h3>
+      <div class="complete-steps-summary" id="completeSummary"></div>
+      <div style="font-size: 14.5px; color: #166534; font-weight: 800;" id="completeNote"></div>
+      <div class="log-status-msg" id="logStatusMsg"></div>
+    </div>
+  </div>
+
+  <!-- 하단 컨트롤 바 -->
+  <div class="btn-group" id="btnGroup">
+    <div class="left-sub-btns">
+      <button id="demoTypeSelectBtn" class="sub-btn btn-reset" style="display:none;" onclick="goToDemoStep0()">📋 유형 다시 선택</button>
+      <button id="rerollBtn" class="sub-btn btn-reroll" onclick="rerollProblem()">🎲 다른 문제 뽑기</button>
+      <button id="switchModeSubBtn" class="sub-btn btn-reset" style="display:none;" onclick="switchToNormalMode()">🟢 노말 모드로 돌아가기</button>
+    </div>
+    <div class="right-main-btns">
+      <button id="combineBtn" class="main-step-btn btn-next-blink" onclick="handleStepTransition()"></button>
+      <button id="actionBtn" class="main-step-btn btn-check-ans" onclick="handleVerifyAction()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- 1) 학생 학번 / PIN 번호 (또는 교사 코드) 입력 모달 -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal-card">
+    <h3 class="modal-title">👤 학번 또는 PIN 번호 입력</h3>
+    <p class="modal-desc">
+      수업 활동 기록을 위해 본인의 <strong>학번(예: 30105)</strong> 또는 안내받은 <strong>코드</strong>를 입력해 주세요.
+    </p>
+    <input type="text" id="pinInputBox" class="modal-input" placeholder="예: 30105" maxlength="20">
+    <div class="modal-actions">
+      <button type="button" class="btn-modal btn-modal-secondary" onclick="closePinModal()">건너뛰기</button>
+      <button type="button" class="btn-modal btn-modal-primary" onclick="saveStudentPin()">저장하고 시작하기 (Enter ↵)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2) 교사용 구글 스프레드시트 데이터 수집 설정 & CSV 다운로드 모달 -->
+<div class="modal-overlay" id="sheetModal">
+  <div class="modal-card">
+    <h3 class="modal-title">📊 구글 스프레드시트 데이터 수집 설정</h3>
+    <p class="modal-desc">
+      학생들이 문제를 풀 때마다 <strong>[학번/PIN(교사는 '교사'로 표시), 모드/유형, 방정식, 단계별 오답 횟수, 오류 유형, 힌트 열람 횟수, 소요 시간]</strong>을 구글 스프레드시트로 자동 전송합니다.
+    </p>
+    <label style="font-size:13px; font-weight:800; color:#334155; display:block; margin-bottom:4px;">
+      🔗 구글 Apps Script 웹 앱 URL (배포 후 복사한 주소 붙여넣기)
+    </label>
+    <input type="url" id="sheetUrlInput" class="modal-input" style="font-size:14px;" placeholder="https://script.google.com/macros/s/.../exec">
+
+    <details style="margin-bottom: 14px; font-size: 13px; color: #334155; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
+      <summary style="font-weight: 800; cursor: pointer; color: var(--primary-dark);">
+        💡 구글 스프레드시트 1분 연동 방법 & 스크립트 코드 보기 (클릭)
+      </summary>
+      <ol style="margin: 8px 0 6px; padding-left: 18px; line-height: 1.55;">
+        <li>새 구글 스프레드시트를 만들고 상단 메뉴 <strong>[확장 프로그램] ➔ [Apps Script]</strong>를 클릭합니다.</li>
+        <li>기존 코드를 지우고 아래 코드를 붙여넣은 뒤 저장(💾)합니다.</li>
+        <li>우측 상단 <strong>[배포] ➔ [새 배포]</strong> 클릭 ➔ 유형: <strong>웹 앱</strong> 선택 ➔ 액세스 권한: <strong>모든 사용자(Anyone)</strong>로 설정 후 배포합니다.</li>
+        <li>생성된 <strong>웹 앱 URL</strong>을 복사하여 위 입력칸에 붙여넣고 저장하면 완료!</li>
+      </ol>
+      <div class="code-snippet" id="appsScriptCode">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["시각", "학번/PIN", "모드/유형", "방정식", "1단계오답수", "2단계오답수", "3단계(최종)오답수", "오류유형", "힌트열람수", "소요시간(초)"]);
+  }
+  var d = JSON.parse(e.postData.contents);
+  sheet.appendRow([new Date(), d.studentPin, d.problemType, d.equation, d.step1Errors, d.step2Errors, d.step3Errors, d.step3ErrorTypes, d.hintCount, d.durationSec]);
+  return ContentService.createTextOutput("OK");
+}</div>
+      <button type="button" class="btn-modal btn-modal-secondary" style="font-size:12px; padding:6px 10px;" onclick="copyAppsScript()">📋 Apps Script 코드 복사하기</button>
+    </details>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <button type="button" class="btn-modal btn-modal-secondary" onclick="downloadLocalLogsCsv()">
+        📥 이 기기에 저장된 기록 엑셀(CSV) 다운로드 (<span id="localLogCount">0</span>건)
+      </button>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal btn-modal-secondary" onclick="closeSheetModal()">닫기</button>
+        <button type="button" class="btn-modal btn-modal-primary" onclick="saveSheetUrl()">URL 저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DEFAULT_GOOGLE_SHEET_URL = "";
+  const TEACHER_SECRET_CODE = "lmagic3078";
+
+  const DEMO_TYPE_NAMES = [
+    "[시연] 유형 1: 기본형",
+    "[시연] 유형 2: 음수 일차항",
+    "[시연] 유형 3: 응용형",
+    "[시연] 유형 4: 정수 해",
+    "[시연] 🎲 완전 랜덤"
+  ];
+
+  let gameMode = 'normal';
+  let isTeacherMode = false;
+  let currentDemoType = null;
+
+  let normalNoHintClears = 0;
+  let hardClears = 0;
+  let isHardUnlocked = false;
+  let pendingHardTransition = false;
+
+  let current = { b: 6, c: 2 };
+  let hardProblem = {
+    subtypeName: "",
+    displayLatex: "",
+    reducedLatex: "",
+    squareLatex: "",
+    finalAnsLatex: "",
+    isFraction: false,
+    ansP: -3,
+    ansQ: 7,
+    fracNum1: -3,
+    fracDen1: 2,
+    fracNum2: 13,
+    fracDen2: 4
+  };
+  let hardUseFractionFrame = false;
+  let lastHardCategory = -1;
+
+  let step = 1;
+  let isHintOpen = false;
+  let currentHintLabel = "선생님의 발문 · 힌트 보기";
+
+  let studentPin = localStorage.getItem('eqLab_studentPin') || "";
+  if (studentPin.toLowerCase() === TEACHER_SECRET_CODE) {
+    isTeacherMode = true;
+  }
+
+  let sheetWebhookUrl = localStorage.getItem('eqLab_sheetUrl') || DEFAULT_GOOGLE_SHEET_URL;
+  let sessionStats = {
+    startTime: 0,
+    step1Errors: 0,
+    step2Errors: 0,
+    step3Errors: 0,
+    step3ErrorTypes: [],
+    hintCount: 0
+  };
+
+  // DOM 참조
+  const appContainer = document.getElementById('appContainer');
+  const modeBadge = document.getElementById('modeBadge');
+  const topHardBtn = document.getElementById('topHardBtn');
+  const topHardBtnLabel = document.getElementById('topHardBtnLabel');
+  const hardCountPill = document.getElementById('hardCountPill');
+  const teacherModeBar = document.getElementById('teacherModeBar');
+  const tabTeacherDemo = document.getElementById('tabTeacherDemo');
+  const tabTeacherNormal = document.getElementById('tabTeacherNormal');
+  const tabTeacherHard = document.getElementById('tabTeacherHard');
+
+  const normalProgressSteps = document.getElementById('normalProgressSteps');
+  const pill0 = document.getElementById('pill0');
+  const studentPinBadge = document.getElementById('studentPinBadge');
+  const sheetConfigBtn = document.getElementById('sheetConfigBtn');
+  const topStepBox = document.getElementById('topStepBox');
+  const topStatusWrap = document.getElementById('topStatusWrap');
+  const step0Area = document.getElementById('step0Area');
+  const scaleArea = document.getElementById('scaleArea');
+  const geoCard = document.getElementById('geoCard');
+  const solveArea = document.getElementById('solveArea');
+  const hardArea = document.getElementById('hardArea');
+  const completeArea = document.getElementById('completeArea');
+  const completeBadge = document.getElementById('completeBadge');
+  const completeTitle = document.getElementById('completeTitle');
+  const completeSummary = document.getElementById('completeSummary');
+  const completeNote = document.getElementById('completeNote');
+  const logStatusMsg = document.getElementById('logStatusMsg');
+
+  const beam = document.getElementById('beam');
+  const leftPlate = document.getElementById('leftPlate');
+  const rightPlate = document.getElementById('rightPlate');
+  const eqSignBox = document.getElementById('eqSignBox');
+  const leftInput = document.getElementById('leftInput');
+  const rightInput = document.getElementById('rightInput');
+  const leftExprText = document.getElementById('leftExprText');
+  const rightExprText = document.getElementById('rightExprText');
+  const leftOpSign = document.getElementById('leftOpSign');
+  const rightOpSign = document.getElementById('rightOpSign');
+  const leftSubResult = document.getElementById('leftSubResult');
+  const rightSubResult = document.getElementById('rightSubResult');
+
+  const statusBadge = document.getElementById('statusBadge');
+  const hintToggleBtn = document.getElementById('hintToggleBtn');
+  const hintBox = document.getElementById('hintBox');
+  const mainEq = document.getElementById('mainEq');
+  const stepDesc = document.getElementById('stepDesc');
+  const actionBtn = document.getElementById('actionBtn');
+  const combineBtn = document.getElementById('combineBtn');
+  const demoTypeSelectBtn = document.getElementById('demoTypeSelectBtn');
+  const rerollBtn = document.getElementById('rerollBtn');
+  const switchModeSubBtn = document.getElementById('switchModeSubBtn');
+  const tileX2Main = document.getElementById('tileX2Main');
+  const tileX2Sub = document.getElementById('tileX2Sub');
+  const tileRight = document.getElementById('tileRight');
+  const tileBottom = document.getElementById('tileBottom');
+  const tileCorner = document.getElementById('tileCorner');
+  const solveGuideText = document.getElementById('solveGuideText');
+  const solveXEquals = document.getElementById('solveXEquals');
+  const solvePlusMinus = document.getElementById('solvePlusMinus');
+  const ansPart1 = document.getElementById('ansPart1');
+  const ansPart2 = document.getElementById('ansPart2');
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const pinModal = document.getElementById('pinModal');
+  const pinInputBox = document.getElementById('pinInputBox');
+  const sheetModal = document.getElementById('sheetModal');
+  const sheetUrlInput = document.getElementById('sheetUrlInput');
+  const localLogCount = document.getElementById('localLogCount');
+
+  // 하드 모드 칠판 및 실시간 LaTeX 타이핑 DOM
+  const chalkCanvas = document.getElementById('chalkCanvas');
+  const chalkHiddenInput = document.getElementById('chalkHiddenInput');
+  const chalkLatexBoard = document.getElementById('chalkLatexBoard');
+  const chalkWorkWrap = document.getElementById('chalkWorkWrap');
+  const btnDrawMode = document.getElementById('btnDrawMode');
+  const btnTypeMode = document.getElementById('btnTypeMode');
+  const btnEraserMode = document.getElementById('btnEraserMode');
+  const latexHelperBar = document.getElementById('latexHelperBar');
+  const btnUndoChalk = document.getElementById('btnUndoChalk');
+  const btnRedoChalk = document.getElementById('btnRedoChalk');
+  const frameToggleBtn = document.getElementById('frameToggleBtn');
+  const hardIntFrame = document.getElementById('hardIntFrame');
+  const hardFracFrame = document.getElementById('hardFracFrame');
+  const hardIntXEq = document.getElementById('hardIntXEq');
+  const hardIntPm = document.getElementById('hardIntPm');
+  const hardFracXEq = document.getElementById('hardFracXEq');
+  const hardFracPm = document.getElementById('hardFracPm');
+  const hardInt1 = document.getElementById('hardInt1');
+  const hardInt2 = document.getElementById('hardInt2');
+  const hardFracNum1 = document.getElementById('hardFracNum1');
+  const hardFracDen1 = document.getElementById('hardFracDen1');
+  const hardFracNum2 = document.getElementById('hardFracNum2');
+  const hardFracDen2 = document.getElementById('hardFracDen2');
+
+  // LaTeX 문자열을 유니코드 수식(x², ±, √, ≠ 등)으로 변환
+  function latexToUnicode(latexStr) {
+    return latexStr
+      .replace(/\\dfrac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+      .replace(/\\left\(/g, '(')
+      .replace(/\\right\)/g, ')')
+      .replace(/\\;|\s+/g, ' ')
+      .replace(/\^2/g, '²')
+      .replace(/\\pm/g, '±')
+      .replace(/\\sqrt\{\\phantom\{x\}\}/g, '√')
+      .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+      .replace(/\\neq/g, '≠')
+      .replace(/\\ge/g, '≥')
+      .replace(/\\times/g, '×')
+      .replace(/\\square/g, '□')
+      .trim();
+  }
+
+  function tex(latexStr, displayMode = false) {
+    const unicodeStr = latexToUnicode(latexStr);
+    if (window.katex) {
+      try {
+        let html = window.katex.renderToString(latexStr, {
+          throwOnError: false,
+          displayMode: displayMode,
+          output: "html"
+        });
+        return `<span class="math-tex" data-math-unicode="${unicodeStr.replace(/"/g, '&quot;')}">${html}</span>`;
+      } catch (e) {
+        return unicodeStr;
+      }
+    }
+    return unicodeStr;
+  }
+
+  // 수식 드래그 복사(Ctrl+C) 시 'x²'로 복사되도록 처리
+  document.addEventListener('copy', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+    const range = sel.getRangeAt(0);
+    const container = document.createElement('div');
+    container.appendChild(range.cloneContents());
+
+    container.querySelectorAll('.math-tex').forEach(el => {
+      const uText = el.getAttribute('data-math-unicode');
+      if (uText) el.textContent = uText;
+    });
+
+    container.querySelectorAll('.msupsub').forEach(el => {
+      if (el.textContent.trim() === '2') el.textContent = '²';
+    });
+
+    let plainText = container.innerText || container.textContent || "";
+    plainText = plainText.replace(/([xA-Za-z0-9)\]])2\b/g, '$1²');
+
+    if (e.clipboardData) {
+      e.clipboardData.setData('text/plain', plainText);
+      e.preventDefault();
+    }
+  });
+
+  // 고정 수식 초기 렌더링
+  function initStaticMath() {
+    tileX2Main.innerHTML = tex("x^2");
+    tileX2Sub.innerHTML = tex("(x \\times x)");
+    solveGuideText.innerHTML = `제곱근의 성질: ${tex("A^2 = k \\;(k \\ge 0)")} 이면 ${tex("A = \\pm\\sqrt{k}")} 입니다.`;
+    solveXEquals.innerHTML = tex("x =");
+    solvePlusMinus.innerHTML = tex("\\pm");
+    hardIntXEq.innerHTML = tex("x =");
+    hardIntPm.innerHTML = tex("\\pm");
+    hardFracXEq.innerHTML = tex("x =");
+    hardFracPm.innerHTML = tex("\\pm");
+
+    // 칠판 우측 상단 보조도구 버튼: x², x, ², (, ), +, -, ±, =, √ 각각 별도 렌더링
+    document.getElementById('btnTexX2').innerHTML = tex("x^2");
+    document.getElementById('btnTexX').innerHTML = tex("x");
+    document.getElementById('btnTexSup2').innerHTML = tex("\\square^2");
+    document.getElementById('btnTexOpenP').innerHTML = tex("(");
+    document.getElementById('btnTexCloseP').innerHTML = tex(")");
+    document.getElementById('btnTexPlus').innerHTML = tex("+");
+    document.getElementById('btnTexMinus').innerHTML = tex("-");
+    document.getElementById('btnTexPm').innerHTML = tex("\\pm");
+    document.getElementById('btnTexEq').innerHTML = tex("=");
+    document.getElementById('btnTexSqrt').innerHTML = tex("\\sqrt{\\square}");
+  }
+
+  // ============================================================================
+  // 칠판 자유 타이핑 + 실시간 LaTeX(KaTeX) 렌더링 & 지수법칙(x·x -> x², x³) & Undo/Redo 시스템
+  // ============================================================================
+  let isChalkFocused = false;
+  let typeHistory = [""];
+  let typeHistoryIdx = 0;
+  let drawHistory = [];
+  let drawHistoryIdx = -1;
+
+  // x가 연속으로 입력되면(예: xx, x²x, x^2x, x^3x 등) 지수법칙에 따라 x², x^3, x^4 등으로 자동 결합!
+  // 단, x+x 처럼 연산기호가 사이에 있는 경우는 그대로 x+x로 유지합니다.
+  function combineConsecutiveX(str) {
+    if (!str) return "";
+    // 먼저 x²를 x^2로 일시 변환하여 지수 계산을 통일
+    let temp = str.replace(/x²/gi, 'x^2');
+    // 연속된 x 또는 x^n 패턴(중간에 +, -, 공백 등이 없는 경우)을 찾아 지수를 모두 합산
+    temp = temp.replace(/x(?:\^\d+)?(?:x(?:\^\d+)?)+/gi, (match) => {
+      const tokens = match.match(/x(?:\^\d+)?/gi) || [];
+      let totalExp = 0;
+      tokens.forEach(tok => {
+        const parts = tok.split('^');
+        totalExp += parts.length > 1 ? parseInt(parts[1], 10) : 1;
+      });
+      return totalExp === 2 ? 'x²' : `x^${totalExp}`;
+    });
+    // 단독 x^2도 x²로 통일
+    temp = temp.replace(/x\^2(?!\d)/gi, 'x²');
+    return temp;
+  }
+
+  function applyChalkTextWithExponentLaw(newRawVal, cursorPos) {
+    const beforeCursor = newRawVal.slice(0, cursorPos);
+    const afterCursor = newRawVal.slice(cursorPos);
+    const combinedBefore = combineConsecutiveX(beforeCursor);
+    const fullCombined = combineConsecutiveX(combinedBefore + afterCursor);
+    const newCursor = Math.min(fullCombined.length, combinedBefore.length);
+    return { text: fullCombined, pos: newCursor };
+  }
+
+  function pushTypeHistory(val) {
+    if (val === typeHistory[typeHistoryIdx]) return;
+    typeHistory = typeHistory.slice(0, typeHistoryIdx + 1);
+    typeHistory.push(val);
+    if (typeHistory.length > 80) {
+      typeHistory.shift();
+    } else {
+      typeHistoryIdx++;
+    }
+    updateUndoRedoBtns();
+  }
+
+  function saveDrawSnapshot() {
+    if (!chalkCanvas || chalkCanvas.width === 0 || chalkCanvas.height === 0) return;
+    const dataUrl = chalkCanvas.toDataURL();
+    if (drawHistoryIdx >= 0 && drawHistory[drawHistoryIdx] === dataUrl) return;
+    drawHistory = drawHistory.slice(0, drawHistoryIdx + 1);
+    drawHistory.push(dataUrl);
+    if (drawHistory.length > 40) {
+      drawHistory.shift();
+    } else {
+      drawHistoryIdx++;
+    }
+    updateUndoRedoBtns();
+  }
+
+  function restoreDrawSnapshot(dataUrl) {
+    if (!chalkCtx) return;
+    chalkCtx.globalCompositeOperation = 'source-over';
+    chalkCtx.clearRect(0, 0, chalkCanvas.width, chalkCanvas.height);
+    if (!dataUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      chalkCtx.globalCompositeOperation = 'source-over';
+      chalkCtx.clearRect(0, 0, chalkCanvas.width, chalkCanvas.height);
+      chalkCtx.drawImage(img, 0, 0);
+    };
+    img.src = dataUrl;
+  }
+
+  function updateUndoRedoBtns() {
+    if (!btnUndoChalk || !btnRedoChalk) return;
+    if (chalkMode === 'type') {
+      btnUndoChalk.disabled = (typeHistoryIdx <= 0);
+      btnRedoChalk.disabled = (typeHistoryIdx >= typeHistory.length - 1);
+    } else {
+      btnUndoChalk.disabled = (drawHistoryIdx <= 0);
+      btnRedoChalk.disabled = (drawHistoryIdx >= drawHistory.length - 1);
+    }
+  }
+
+  function undoChalk() {
+    if (chalkMode === 'type') {
+      if (typeHistoryIdx > 0) {
+        typeHistoryIdx--;
+        chalkHiddenInput.value = typeHistory[typeHistoryIdx];
+        const len = chalkHiddenInput.value.length;
+        chalkHiddenInput.focus();
+        chalkHiddenInput.setSelectionRange(len, len);
+        renderChalkLatexBoard();
+        updateUndoRedoBtns();
+      }
+    } else {
+      if (drawHistoryIdx > 0) {
+        drawHistoryIdx--;
+        restoreDrawSnapshot(drawHistory[drawHistoryIdx]);
+        updateUndoRedoBtns();
+      }
+    }
+  }
+
+  function redoChalk() {
+    if (chalkMode === 'type') {
+      if (typeHistoryIdx < typeHistory.length - 1) {
+        typeHistoryIdx++;
+        chalkHiddenInput.value = typeHistory[typeHistoryIdx];
+        const len = chalkHiddenInput.value.length;
+        chalkHiddenInput.focus();
+        chalkHiddenInput.setSelectionRange(len, len);
+        renderChalkLatexBoard();
+        updateUndoRedoBtns();
+      }
+    } else {
+      if (drawHistoryIdx < drawHistory.length - 1) {
+        drawHistoryIdx++;
+        restoreDrawSnapshot(drawHistory[drawHistoryIdx]);
+        updateUndoRedoBtns();
+      }
+    }
+  }
+
+  // 학생이 자유롭게 타이핑한 문자열을 LaTeX 수식으로 변환 (+와 -는 분리 유지, √ 뒤의 숫자는 괄호 없이도 근호 안으로 자동 진입, x^n 렌더링!)
+  function userTextToLatex(rawStr) {
+    if (!rawStr) return "";
+    let s = combineConsecutiveX(rawStr);
+    // x² -> ^2 및 x^n -> x^{n} 변환
+    s = s.replace(/²/g, '^2');
+    s = s.replace(/\^(\d+)/g, '^{$1}');
+    s = s.replace(/±/g, '\\pm ');
+    s = s.replace(/\*/g, '\\times ');
+    // 1) √(분수 또는 식) 형태 처리
+    s = s.replace(/√\(([0-9]+)\/([0-9]+)\)/g, '\\sqrt{\\dfrac{$1}{$2}}');
+    s = s.replace(/√\(([^)]*)\)/g, '\\sqrt{$1}');
+    // 2) 괄호 없이 바로 입력한 √분수(예: √13/4) 또는 √숫자(예: √7, √13)가 근호 안으로 깔끔하게 들어가도록 처리!
+    s = s.replace(/√([0-9]+)\/([0-9]+)/g, '\\sqrt{\\dfrac{$1}{$2}}');
+    s = s.replace(/√([0-9a-zA-Z]+)/g, '\\sqrt{$1}');
+    // 3) 아직 숫자를 치기 전의 단독 √ 기호 표시
+    s = s.replace(/√/g, '\\sqrt{\\phantom{x}}');
+    // 일반 분수 a/b -> \dfrac{a}{b}
+    s = s.replace(/([0-9]+)\/([0-9]+)/g, '\\dfrac{$1}{$2}');
+    // 끝에 단독으로 남은 ^ 기호 안전 처리
+    s = s.replace(/\^$/g, '^{\\square}');
+    return s;
+  }
+
+  function renderChalkLatexBoard() {
+    const val = chalkHiddenInput.value;
+    const selPos = chalkHiddenInput.selectionStart || 0;
+    const lines = val.split('\n');
+
+    let charCount = 0;
+    let activeLineIdx = 0;
+    let activeColIdx = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const lineLen = lines[i].length;
+      if (selPos <= charCount + lineLen) {
+        activeLineIdx = i;
+        activeColIdx = selPos - charCount;
+        break;
+      }
+      charCount += lineLen + 1;
+    }
+
+    chalkLatexBoard.innerHTML = "";
+    lines.forEach((lineStr, idx) => {
+      const lineDiv = document.createElement('div');
+      const isCurrent = (idx === activeLineIdx) && (chalkMode === 'type');
+      lineDiv.className = isCurrent ? 'chalk-rendered-line active-line' : 'chalk-rendered-line';
+
+      lineDiv.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        setChalkTool('type');
+        let targetPos = 0;
+        for (let k = 0; k < idx; k++) targetPos += lines[k].length + 1;
+        targetPos += lines[idx].length;
+        chalkHiddenInput.focus();
+        chalkHiddenInput.setSelectionRange(targetPos, targetPos);
+        renderChalkLatexBoard();
+      });
+
+      if (isCurrent && isChalkFocused) {
+        const beforeStr = lineStr.slice(0, activeColIdx);
+        const afterStr = lineStr.slice(activeColIdx);
+        const beforeHtml = beforeStr ? tex(userTextToLatex(beforeStr)) : "";
+        const afterHtml = afterStr ? tex(userTextToLatex(afterStr)) : "";
+        lineDiv.innerHTML = `${beforeHtml}<span class="chalk-caret"></span>${afterHtml}`;
+      } else {
+        lineDiv.innerHTML = lineStr ? tex(userTextToLatex(lineStr)) : "&nbsp;";
+      }
+      chalkLatexBoard.appendChild(lineDiv);
+    });
+
+    chalkLatexBoard.scrollTop = chalkLatexBoard.scrollHeight;
+  }
+
+  function focusChalkTyping() {
+    if (chalkMode !== 'type') return;
+    chalkHiddenInput.focus();
+    isChalkFocused = true;
+    renderChalkLatexBoard();
+  }
+
+  // 보조도구 버튼을 누르면 현재 커서 위치에 해당 기호가 입력되며, 연속된 x는 지수법칙으로 자동 결합!
+  function insertChalkSymbol(sym) {
+    if (chalkMode !== 'type') {
+      setChalkTool('type');
+    }
+    chalkHiddenInput.focus();
+    isChalkFocused = true;
+
+    const start = chalkHiddenInput.selectionStart || 0;
+    const end = chalkHiddenInput.selectionEnd || 0;
+    const val = chalkHiddenInput.value;
+    const rawInserted = val.slice(0, start) + sym + val.slice(end);
+    const rawPos = start + sym.length;
+
+    const res = applyChalkTextWithExponentLaw(rawInserted, rawPos);
+    chalkHiddenInput.value = res.text;
+    chalkHiddenInput.setSelectionRange(res.pos, res.pos);
+    pushTypeHistory(chalkHiddenInput.value);
+    renderChalkLatexBoard();
+  }
+
+  chalkHiddenInput.addEventListener('input', () => {
+    const pos = chalkHiddenInput.selectionStart || 0;
+    const before = chalkHiddenInput.value.replace(/\^2(?!\d)/g, '²');
+    const res = applyChalkTextWithExponentLaw(before, pos);
+    chalkHiddenInput.value = res.text;
+    chalkHiddenInput.setSelectionRange(res.pos, res.pos);
+    pushTypeHistory(chalkHiddenInput.value);
+    renderChalkLatexBoard();
+  });
+
+  chalkHiddenInput.addEventListener('keyup', renderChalkLatexBoard);
+  chalkHiddenInput.addEventListener('click', renderChalkLatexBoard);
+  chalkHiddenInput.addEventListener('focus', () => {
+    isChalkFocused = true;
+    renderChalkLatexBoard();
+  });
+  chalkHiddenInput.addEventListener('blur', () => {
+    isChalkFocused = false;
+    renderChalkLatexBoard();
+  });
+
+  // ============================================================================
+  // 칠판 분필 필기 캔버스 로직 (필기/지우개 Undo/Redo 히스토리 포함)
+  // ============================================================================
+  let chalkCtx = null;
+  let isDrawing = false;
+  let hasMovedStroke = false;
+  let chalkMode = 'type'; // 'type' | 'draw' | 'erase'
+  let lastPt = { x: 0, y: 0 };
+
+  function initChalkCanvas() {
+    chalkCtx = chalkCanvas.getContext('2d');
+    resizeChalkCanvas();
+    window.addEventListener('resize', resizeChalkCanvas);
+
+    const getPos = (e) => {
+      const rect = chalkCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    };
+
+    const startDraw = (e) => {
+      if (chalkMode === 'type') return;
+      isDrawing = true;
+      hasMovedStroke = false;
+      lastPt = getPos(e);
+    };
+
+    const moveDraw = (e) => {
+      if (!isDrawing || chalkMode === 'type') return;
+      if (e.cancelable) e.preventDefault();
+      hasMovedStroke = true;
+      const pt = getPos(e);
+      chalkCtx.beginPath();
+      chalkCtx.moveTo(lastPt.x, lastPt.y);
+      chalkCtx.lineTo(pt.x, pt.y);
+      if (chalkMode === 'erase') {
+        chalkCtx.globalCompositeOperation = 'destination-out';
+        chalkCtx.lineWidth = 24;
+      } else {
+        chalkCtx.globalCompositeOperation = 'source-over';
+        chalkCtx.strokeStyle = '#ffffff';
+        chalkCtx.lineWidth = 3.2;
+      }
+      chalkCtx.lineCap = 'round';
+      chalkCtx.lineJoin = 'round';
+      chalkCtx.stroke();
+      lastPt = pt;
+    };
+
+    const endDraw = () => {
+      if (isDrawing && hasMovedStroke) {
+        saveDrawSnapshot();
+      }
+      isDrawing = false;
+      hasMovedStroke = false;
+    };
+
+    chalkCanvas.addEventListener('mousedown', startDraw);
+    chalkCanvas.addEventListener('mousemove', moveDraw);
+    window.addEventListener('mouseup', endDraw);
+
+    chalkCanvas.addEventListener('touchstart', startDraw, { passive: false });
+    chalkCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+    window.addEventListener('touchend', endDraw);
+  }
+
+  function resizeChalkCanvas() {
+    if (!chalkWorkWrap || !chalkCtx) return;
+    const rect = chalkWorkWrap.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = chalkCanvas.width;
+    tempCanvas.height = chalkCanvas.height;
+    if (chalkCanvas.width > 0 && chalkCanvas.height > 0) {
+      tempCanvas.getContext('2d').drawImage(chalkCanvas, 0, 0);
+    }
+    chalkCanvas.width = rect.width;
+    chalkCanvas.height = rect.height;
+    if (tempCanvas.width > 0 && tempCanvas.height > 0) {
+      chalkCtx.drawImage(tempCanvas, 0, 0);
+    }
+    if (drawHistory.length === 0) {
+      saveDrawSnapshot();
+    }
+  }
+
+  // 필기 탭(draw/erase)에서는 수식 기호 보조버튼(#latexHelperBar)을 숨기고, 타이핑 탭에서만 표시!
+  function setChalkTool(mode) {
+    chalkMode = mode;
+    btnTypeMode.classList.toggle('active', mode === 'type');
+    btnDrawMode.classList.toggle('active', mode === 'draw');
+    btnEraserMode.classList.toggle('active', mode === 'erase');
+
+    if (mode === 'type') {
+      latexHelperBar.style.display = 'flex';
+      chalkCanvas.classList.add('typing-pass');
+      chalkHiddenInput.focus();
+      isChalkFocused = true;
+    } else {
+      latexHelperBar.style.display = 'none';
+      chalkCanvas.classList.remove('typing-pass');
+      isChalkFocused = false;
+      if (drawHistory.length === 0) {
+        saveDrawSnapshot();
+      }
+    }
+    updateUndoRedoBtns();
+    renderChalkLatexBoard();
+  }
+
+  function clearChalkboard() {
+    if (chalkCtx) {
+      chalkCtx.clearRect(0, 0, chalkCanvas.width, chalkCanvas.height);
+    }
+    chalkHiddenInput.value = "";
+    typeHistory = [""];
+    typeHistoryIdx = 0;
+    drawHistory = [];
+    drawHistoryIdx = -1;
+    if (chalkCanvas.width > 0 && chalkCanvas.height > 0) {
+      saveDrawSnapshot();
+    }
+    updateUndoRedoBtns();
+    renderChalkLatexBoard();
+    if (chalkMode === 'type') {
+      chalkHiddenInput.focus();
+    }
+  }
+
+  // ============================================================================
+  // 상단 '🔥 하드 모드' 버튼 및 미클리어 학생 클릭 시 안내 멘트 처리
+  // ============================================================================
+  function updateStampDisplay() {
+    const filled = Math.min(3, normalNoHintClears);
+    const stamps = "🟢".repeat(filled) + "⚪".repeat(3 - filled);
+    if (isHardUnlocked || isTeacherMode) {
+      topHardBtn.classList.add('unlocked');
+      topHardBtnLabel.innerText = `🔥 하드 모드 (🟢🟢🟢 해금됨!)`;
+    } else {
+      topHardBtn.classList.remove('unlocked');
+      topHardBtnLabel.innerText = `🔥 하드 모드 (${stamps} ${filled}/3)`;
+    }
+    hardCountPill.innerText = `클리어: ${hardClears}`;
+  }
+
+  function onTopHardBtnClick() {
+    if (gameMode === 'hard') {
+      switchToNormalMode();
+      return;
+    }
+
+    if (isTeacherMode || isHardUnlocked) {
+      startHardMode();
+    } else {
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "🔒 노말 모드를 클리어 하고 시도해주세요 (힌트 없이 3문제 클리어 필요)";
+      alert("노말 모드를 클리어 하고 시도해주세요");
+    }
+  }
+
+  // ============================================================================
+  // 👨‍🏫 교사 모드 ('lmagic3078') 제어 및 3가지 모드 전환
+  // ============================================================================
+  function updateTeacherUI() {
+    if (isTeacherMode) {
+      teacherModeBar.style.display = "flex";
+      sheetConfigBtn.style.display = "inline-block";
+      studentPinBadge.classList.add('teacher-badge');
+      studentPinBadge.innerText = "👨‍🏫 교사 모드 (클릭 시 변경)";
+    } else {
+      teacherModeBar.style.display = "none";
+      sheetConfigBtn.style.display = "none";
+      studentPinBadge.classList.remove('teacher-badge');
+      studentPinBadge.innerText = studentPin ? `👤 학번/PIN: ${studentPin}` : `👤 학번/PIN 입력하기`;
+    }
+    updateStampDisplay();
+  }
+
+  function updateTeacherTabsActive() {
+    if (!isTeacherMode) return;
+    tabTeacherDemo.classList.toggle('active', gameMode === 'demo');
+    tabTeacherNormal.classList.toggle('active', gameMode === 'normal');
+    tabTeacherHard.classList.toggle('active', gameMode === 'hard');
+  }
+
+  function switchTeacherMode(targetMode) {
+    if (targetMode === 'demo') {
+      goToDemoStep0();
+    } else if (targetMode === 'normal') {
+      switchToNormalMode();
+    } else if (targetMode === 'hard') {
+      startHardMode();
+    }
+  }
+
+  // 입력 이벤트 연결
+  leftInput.addEventListener('input', onScaleInput);
+  rightInput.addEventListener('input', onScaleInput);
+  ansPart1.addEventListener('input', onStep3Input);
+  ansPart2.addEventListener('input', onStep3Input);
+
+  [hardInt1, hardInt2, hardFracNum1, hardFracDen1, hardFracNum2, hardFracDen2].forEach(inp => {
+    inp.addEventListener('input', onHardAnsInput);
+  });
+
+  // 엔터키(Enter) 및 칠판 Undo(Ctrl+Z)/Redo(Ctrl+Y) 단축키 동작 지원
+  document.addEventListener('keydown', (e) => {
+    if (gameMode === 'hard' && step === 3 && (e.ctrlKey || e.metaKey)) {
+      if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undoChalk();
+        return;
+      }
+      if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redoChalk();
+        return;
+      }
+    }
+
+    if (e.key !== 'Enter') return;
+
+    if (pinModal.classList.contains('show')) {
+      e.preventDefault();
+      saveStudentPin();
+      return;
+    }
+    if (sheetModal.classList.contains('show')) {
+      return;
+    }
+    // 칠판 수식 타이핑 중에 엔터키를 누르면 자연스럽게 다음 풀이 줄로 줄바꿈!
+    if (document.activeElement === chalkHiddenInput && !e.ctrlKey) {
+      return;
+    }
+
+    if (step === 4) {
+      if (combineBtn.style.display !== 'none') {
+        e.preventDefault();
+        handleStepTransition();
+      }
+      return;
+    }
+
+    if (gameMode === 'normal' || gameMode === 'demo') {
+      if (step === 1 || step === 2) {
+        if (combineBtn.style.display !== 'none') {
+          e.preventDefault();
+          handleStepTransition();
+          return;
+        }
+        if (document.activeElement === leftInput) {
+          e.preventDefault();
+          rightInput.focus();
+        }
+      } else if (step === 3) {
+        if (document.activeElement === ansPart1 && ansPart2.value.trim() === '') {
+          e.preventDefault();
+          ansPart2.focus();
+          return;
+        }
+        e.preventDefault();
+        verifyFinalAnswer();
+      }
+    } else if (gameMode === 'hard') {
+      if (!hardUseFractionFrame) {
+        if (document.activeElement === hardInt1 && hardInt2.value.trim() === '') {
+          e.preventDefault();
+          hardInt2.focus();
+          return;
+        }
+        e.preventDefault();
+        verifyHardAnswer();
+      } else {
+        const fracOrder = [hardFracNum1, hardFracDen1, hardFracNum2, hardFracDen2];
+        const idx = fracOrder.indexOf(document.activeElement);
+        if (idx !== -1 && idx < fracOrder.length - 1 && fracOrder[idx + 1].value.trim() === '') {
+          e.preventDefault();
+          fracOrder[idx + 1].focus();
+          return;
+        }
+        e.preventDefault();
+        verifyHardAnswer();
+      }
+    }
+  });
+
+  // 학생 학번/PIN 및 교사 코드('lmagic3078') 저장 처리
+  function openPinModal() {
+    pinInputBox.value = isTeacherMode ? "" : studentPin;
+    pinModal.classList.add('show');
+    setTimeout(() => pinInputBox.focus(), 50);
+  }
+  function closePinModal() { pinModal.classList.remove('show'); }
+
+  function saveStudentPin() {
+    const val = pinInputBox.value.trim();
+    if (val) {
+      studentPin = val;
+      localStorage.setItem('eqLab_studentPin', studentPin);
+      if (val.toLowerCase() === TEACHER_SECRET_CODE) {
+        isTeacherMode = true;
+        updateTeacherUI();
+        closePinModal();
+        goToDemoStep0();
+        return;
+      } else {
+        isTeacherMode = false;
+      }
+    }
+    updateTeacherUI();
+    closePinModal();
+  }
+
+  // 구글 스프레드시트 모달
+  function openSheetModal() {
+    sheetUrlInput.value = sheetWebhookUrl;
+    const logs = JSON.parse(localStorage.getItem('eqLab_logs') || '[]');
+    localLogCount.innerText = logs.length;
+    sheetModal.classList.add('show');
+  }
+  function closeSheetModal() { sheetModal.classList.remove('show'); }
+  function saveSheetUrl() {
+    sheetWebhookUrl = sheetUrlInput.value.trim();
+    localStorage.setItem('eqLab_sheetUrl', sheetWebhookUrl);
+    alert(sheetWebhookUrl ? "구글 스프레드시트 웹 앱 URL이 저장되었습니다!" : "URL 설정이 해제되었습니다.");
+    closeSheetModal();
+  }
+  function copyAppsScript() {
+    const code = document.getElementById('appsScriptCode').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      alert("Apps Script 코드가 복사되었습니다!");
+    });
+  }
+
+  function downloadLocalLogsCsv() {
+    const logs = JSON.parse(localStorage.getItem('eqLab_logs') || '[]');
+    if (logs.length === 0) {
+      alert("아직 저장된 풀이 기록이 없습니다.");
+      return;
+    }
+    const headers = ["시각", "학번/PIN", "모드/유형", "방정식", "1단계오답수", "2단계오답수", "3단계(최종)오답수", "오류유형", "힌트열람수", "소요시간(초)"];
+    const rows = logs.map(r => [
+      r.timestamp, r.studentPin, `"${r.problemType}"`, `"${r.equation}"`,
+      r.step1Errors, r.step2Errors, r.step3Errors, `"${r.step3ErrorTypes}"`, r.hintCount, r.durationSec
+    ].join(","));
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `등식저울_학습기록_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // 학습 데이터 기록 및 구글 시트 전송 (교사가 푼 내용은 아이디 대신 '교사'로 표시!)
+  function recordCompletionLog(eqUnicode, modeTypeLabel) {
+    const durationSec = Math.max(1, Math.round((Date.now() - sessionStats.startTime) / 1000));
+    const displayId = isTeacherMode ? "교사" : (studentPin || "미입력");
+
+    const payload = {
+      timestamp: new Date().toLocaleString('ko-KR'),
+      studentPin: displayId,
+      problemType: modeTypeLabel,
+      equation: eqUnicode,
+      step1Errors: sessionStats.step1Errors,
+      step2Errors: sessionStats.step2Errors,
+      step3Errors: sessionStats.step3Errors,
+      step3ErrorTypes: sessionStats.step3ErrorTypes.length > 0 ? sessionStats.step3ErrorTypes.join(" / ") : "없음(한번에 정답)",
+      hintCount: sessionStats.hintCount,
+      durationSec: durationSec
+    };
+
+    const logs = JSON.parse(localStorage.getItem('eqLab_logs') || '[]');
+    logs.push(payload);
+    localStorage.setItem('eqLab_logs', JSON.stringify(logs));
+
+    if (sheetWebhookUrl) {
+      logStatusMsg.innerText = `📊 학습 기록(${displayId}, ${modeTypeLabel}, ${durationSec}초)을 구글 시트로 전송 중...`;
+      fetch(sheetWebhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        logStatusMsg.innerText = `✅ [${displayId} - ${modeTypeLabel}] 기록이 구글 스프레드시트에 자동 저장되었습니다! (${durationSec}초 소요)`;
+      }).catch(() => {
+        logStatusMsg.innerText = `💾 [${displayId} - ${modeTypeLabel}] 기록이 기기에 저장되었습니다. (${durationSec}초 소요)`;
+      });
+    } else {
+      logStatusMsg.innerText = `💾 [${displayId} - ${modeTypeLabel}] 기록 완료: 소요 시간 ${durationSec}초 · 힌트 열람 ${sessionStats.hintCount}회`;
+    }
+  }
+
+  function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+  document.addEventListener('fullscreenchange', () => {
+    fullscreenBtn.innerText = document.fullscreenElement ? "⛶ 전체화면 종료" : "⛶ 전체화면";
+    setTimeout(resizeChalkCanvas, 100);
+  });
+
+  // 힌트 토글 (하드 모드에서는 힌트 차단)
+  function toggleHintBox() {
+    if (gameMode === 'hard') {
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "🔒 하드 모드에서는 힌트를 쓸 수 없습니다! 칠판에 직접 식을 정리하며 스스로 해결해 보세요.";
+      return;
+    }
+    isHintOpen = !isHintOpen;
+    if (isHintOpen) {
+      sessionStats.hintCount++;
+      hintBox.classList.add('open');
+      hintToggleBtn.classList.remove('has-alert');
+      hintToggleBtn.innerText = `🔼 ${currentHintLabel} 접기`;
+    } else {
+      hintBox.classList.remove('open');
+      hintToggleBtn.innerText = `💡 ${currentHintLabel}`;
+    }
+  }
+
+  function setHintContent(html, labelText = "선생님의 발문 · 힌트 보기", highlightAlert = false) {
+    if (gameMode === 'hard') return;
+    currentHintLabel = labelText;
+    hintBox.innerHTML = html;
+    hintBox.className = "hint-card";
+    if (isHintOpen) {
+      hintBox.classList.add('open');
+      hintToggleBtn.classList.remove('has-alert');
+      hintToggleBtn.innerText = `🔼 ${currentHintLabel} 접기`;
+    } else {
+      hintToggleBtn.innerText = `💡 ${currentHintLabel}`;
+      hintToggleBtn.classList.toggle('has-alert', highlightAlert);
+    }
+  }
+
+  function resetHintCollapsed() {
+    isHintOpen = false;
+    hintBox.classList.remove('open');
+    hintToggleBtn.classList.remove('has-alert');
+  }
+
+  function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // ============================================================================
+  // 문제 생성기 (유형별 생성기 & 통합 랜덤 생성기 & 하드 모드 생성기)
+  // ============================================================================
+  function generateEquationByType(typeIdx) {
+    let b, c, rhs;
+    let attempts = 0;
+    do {
+      attempts++;
+      const effectiveType = (typeIdx === 4) ? Math.floor(Math.random() * 4) : typeIdx;
+      if (effectiveType === 0) {
+        b = pickRandom([2, 4, 6, 8]);
+        rhs = pickRandom([2, 3, 5, 6, 7, 8, 10, 11, 12]);
+      } else if (effectiveType === 1) {
+        b = pickRandom([-2, -4, -6, -8, -10]);
+        rhs = pickRandom([2, 3, 5, 6, 7, 8, 10, 11, 13, 14]);
+      } else if (effectiveType === 2) {
+        b = pickRandom([-12, -10, -8, 8, 10, 12]);
+        rhs = pickRandom([5, 6, 7, 8, 10, 11, 12, 13, 14, 15]);
+      } else {
+        b = pickRandom([-10, -8, -6, -4, 4, 6, 8, 10]);
+        const halfSq = (b / 2) * (b / 2);
+        rhs = pickRandom([1, 4, 9, 16, 25].filter(sq => sq !== halfSq));
+      }
+      c = (b / 2) * (b / 2) - rhs;
+    } while ((c === 0 || (b === current.b && c === current.c)) && attempts < 30);
+
+    return { b, c };
+  }
+
+  function formatPolySide(a2, a1, a0) {
+    let parts = [];
+    if (a2 !== 0) {
+      if (a2 === 1) parts.push("x^2");
+      else if (a2 === -1) parts.push("-x^2");
+      else parts.push(`${a2}x^2`);
+    }
+    if (a1 !== 0) {
+      const abs1 = Math.abs(a1) === 1 ? "x" : `${Math.abs(a1)}x`;
+      if (parts.length === 0) parts.push(a1 > 0 ? abs1 : `-${abs1}`);
+      else parts.push(a1 > 0 ? `+ ${abs1}` : `- ${abs1}`);
+    }
+    if (a0 !== 0) {
+      if (parts.length === 0) parts.push(`${a0}`);
+      else parts.push(a0 > 0 ? `+ ${a0}` : `- ${Math.abs(a0)}`);
+    }
+    return parts.length > 0 ? parts.join(" ") : "0";
+  }
+
+  function generateHardEquation() {
+    const categories = [0, 1, 2].filter(c => c !== lastHardCategory);
+    const cat = pickRandom(categories);
+    lastHardCategory = cat;
+
+    if (cat === 0) {
+      const a = pickRandom([2, 3]);
+      const B = pickRandom([-10, -8, -6, -4, 4, 6, 8, 10]);
+      const h = B / 2;
+      const k = pickRandom([2, 3, 5, 6, 7, 8, 10, 11, 13, 14]);
+      const C = h * h - k;
+
+      return {
+        subtypeName: `[하드 A-1] x² 계수(${a}) 식`,
+        displayLatex: `${formatPolySide(a, a * B, a * C)} = 0`,
+        reducedLatex: `${formatPolySide(1, B, C)} = 0`,
+        squareLatex: `${latexFactor(h)} = ${k}`,
+        finalAnsLatex: `x = ${-h} \\pm \\sqrt{${k}}`,
+        isFraction: false,
+        ansP: -h,
+        ansQ: k,
+        fracNum1: -h,
+        fracDen1: 1,
+        fracNum2: k,
+        fracDen2: 1
+      };
+    } else if (cat === 1) {
+      const a = pickRandom([1, 1, 2, 3]);
+      const B = pickRandom([-8, -6, -4, 4, 6, 8]);
+      const h = B / 2;
+      const k = pickRandom([2, 3, 5, 6, 7, 8, 10, 11, 13]);
+      const C = h * h - k;
+
+      const r1 = pickRandom([-4 * a, -2 * a, 2 * a, 4 * a]);
+      const r0 = pickRandom([-5 * a, -3 * a, 2 * a, 4 * a, 6 * a]);
+
+      return {
+        subtypeName: a === 1 ? `[하드 A-2] 우변 미정리 식` : `[하드 A-1+A-2] x²계수(${a}) & 우변 미정리`,
+        displayLatex: `${formatPolySide(a, a * B + r1, a * C + r0)} = ${formatPolySide(0, r1, r0)}`,
+        reducedLatex: `${formatPolySide(1, B, C)} = 0`,
+        squareLatex: `${latexFactor(h)} = ${k}`,
+        finalAnsLatex: `x = ${-h} \\pm \\sqrt{${k}}`,
+        isFraction: false,
+        ansP: -h,
+        ansQ: k,
+        fracNum1: -h,
+        fracDen1: 1,
+        fracNum2: k,
+        fracDen2: 1
+      };
+    } else {
+      const a = pickRandom([1, 1, 2]);
+      const B = pickRandom([-7, -5, -3, 3, 5, 7]);
+      let C, kNum;
+      do {
+        C = pickRandom([-5, -4, -3, -2, -1, 1, 2, 3, 4]);
+        kNum = B * B - 4 * C;
+      } while (kNum <= 0 || Number.isInteger(Math.sqrt(kNum)));
+
+      const useUnorganizedRhs = Math.random() < 0.5;
+      let dispLatex = "";
+      if (useUnorganizedRhs) {
+        const r1 = pickRandom([-2 * a, 2 * a]);
+        const r0 = pickRandom([-3 * a, 2 * a, 4 * a]);
+        dispLatex = `${formatPolySide(a, a * B + r1, a * C + r0)} = ${formatPolySide(0, r1, r0)}`;
+      } else {
+        dispLatex = `${formatPolySide(a, a * B, a * C)} = 0`;
+      }
+
+      const signB = B > 0 ? "+" : "-";
+      const absB = Math.abs(B);
+
+      return {
+        subtypeName: `[하드 A-3] 분수 완전제곱식`,
+        displayLatex: dispLatex,
+        reducedLatex: `${formatPolySide(1, B, C)} = 0`,
+        squareLatex: `\\left(x ${signB} \\dfrac{${absB}}{2}\\right)^2 = \\dfrac{${kNum}}{4}`,
+        finalAnsLatex: `x = \\dfrac{${-B}}{2} \\pm \\sqrt{\\dfrac{${kNum}}{4}}`,
+        isFraction: true,
+        ansP: -B / 2,
+        ansQ: kNum / 4,
+        fracNum1: -B,
+        fracDen1: 2,
+        fracNum2: kNum,
+        fracDen2: 4
+      };
+    }
+  }
+
+  function latexBx(b) {
+    return b > 0 ? `+ ${b}x` : `- ${Math.abs(b)}x`;
+  }
+  function latexConst(c) {
+    if (c > 0) return `+ ${c}`;
+    if (c < 0) return `- ${Math.abs(c)}`;
+    return '';
+  }
+  function latexSignedNum(n) {
+    return n > 0 ? `+${n}` : `${n}`;
+  }
+  function latexFactor(halfB) {
+    return halfB > 0 ? `(x + ${halfB})^2` : `(x - ${Math.abs(halfB)})^2`;
+  }
+
+  function updatePills(currentStep) {
+    if (gameMode === 'normal' || gameMode === 'demo') {
+      normalProgressSteps.style.display = "flex";
+      pill0.style.display = (gameMode === 'demo') ? "block" : "none";
+      const pills = [
+        document.getElementById('pill0'),
+        document.getElementById('pill1'),
+        document.getElementById('pill2'),
+        document.getElementById('pill3'),
+        document.getElementById('pill4')
+      ];
+      pills.forEach((p, idx) => {
+        p.className = 'step-pill';
+        if (idx < currentStep) p.classList.add('done');
+        else if (idx === currentStep) p.classList.add('active');
+      });
+    } else {
+      // 하드 모드에서는 상단 단계 진행 표시줄 숨김
+      normalProgressSteps.style.display = "none";
+    }
+  }
+
+  // ============================================================================
+  // 1️⃣ 교사 예시 시연 모드 (0단계: 유형 1~4 선택 화면)
+  // ============================================================================
+  function goToDemoStep0() {
+    gameMode = 'demo';
+    step = 0;
+    currentDemoType = null;
+    pendingHardTransition = false;
+    appContainer.classList.remove('hard-theme');
+    updateTeacherTabsActive();
+    updatePills(0);
+    resetHintCollapsed();
+
+    modeBadge.className = "mode-badge demo";
+    modeBadge.innerText = "👩‍🏫 예시 시연 모드";
+
+    topStepBox.style.display = "block";
+    topStatusWrap.style.display = "flex";
+    hintToggleBtn.style.display = "none";
+    hintToggleBtn.classList.remove('locked-hard');
+
+    step0Area.style.display = "grid";
+    scaleArea.style.display = "none";
+    solveArea.style.display = "none";
+    hardArea.style.display = "none";
+    completeArea.style.display = "none";
+
+    actionBtn.style.display = "none";
+    combineBtn.style.display = "none";
+    demoTypeSelectBtn.style.display = "none";
+    rerollBtn.style.display = "none";
+    rerollBtn.innerText = "🎲 다른 문제 뽑기";
+    switchModeSubBtn.style.display = "none";
+
+    stepDesc.innerText = "0단계 [교사 예시 시연]: 학생들에게 시연할 이차방정식의 문제 유형을 선택하세요";
+    mainEq.innerHTML = `문제 유형을 선택하면 이차방정식 ${tex("x^2 + bx + c = 0")} 이 나타납니다`;
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "아래 4가지 유형 또는 완전 랜덤 중 하나를 골라 시연을 시작하세요!";
+  }
+
+  function selectDemoProblemType(typeIdx) {
+    gameMode = 'demo';
+    currentDemoType = typeIdx;
+    current = generateEquationByType(typeIdx);
+    modeBadge.className = "mode-badge demo";
+    modeBadge.innerText = DEMO_TYPE_NAMES[typeIdx];
+    startStep1();
+  }
+
+  // ============================================================================
+  // 2️⃣ 노말 모드로 전환 (버튼 텍스트 '🎲 다른 문제 뽑기'로 복원)
+  // ============================================================================
+  function switchToNormalMode() {
+    gameMode = 'normal';
+    currentDemoType = null;
+    pendingHardTransition = false;
+    appContainer.classList.remove('hard-theme');
+    updateTeacherTabsActive();
+
+    modeBadge.className = "mode-badge";
+    modeBadge.innerText = "🟢 노말 모드";
+    switchModeSubBtn.style.display = "none";
+    demoTypeSelectBtn.style.display = "none";
+    rerollBtn.innerText = "🎲 다른 문제 뽑기";
+    hintToggleBtn.classList.remove('locked-hard');
+
+    current = generateEquationByType(4);
+    startStep1();
+  }
+
+  function rerollProblem() {
+    if (gameMode === 'demo') {
+      const t = currentDemoType !== null ? currentDemoType : 4;
+      current = generateEquationByType(t);
+      startStep1();
+    } else if (gameMode === 'normal') {
+      current = generateEquationByType(4);
+      startStep1();
+    } else {
+      startHardMode();
+    }
+  }
+
+  // 1단계: 시각적 저울로 상수항 소거
+  function startStep1() {
+    step = 1;
+    pendingHardTransition = false;
+    appContainer.classList.remove('hard-theme');
+    updateTeacherTabsActive();
+    updatePills(1);
+    resetHintCollapsed();
+    const { b, c } = current;
+
+    sessionStats = {
+      startTime: Date.now(),
+      step1Errors: 0,
+      step2Errors: 0,
+      step3Errors: 0,
+      step3ErrorTypes: [],
+      hintCount: 0
+    };
+
+    topStepBox.style.display = "block";
+    topStatusWrap.style.display = "flex";
+    hintToggleBtn.style.display = "inline-flex";
+    hintToggleBtn.classList.remove('locked-hard');
+
+    step0Area.style.display = "none";
+    scaleArea.style.display = "grid";
+    scaleArea.className = "workspace-grid step1-mode";
+    geoCard.style.display = "none";
+    solveArea.style.display = "none";
+    hardArea.style.display = "none";
+    completeArea.style.display = "none";
+
+    actionBtn.style.display = "none";
+    combineBtn.style.display = "none";
+    combineBtn.classList.remove('btn-hard-red');
+
+    rerollBtn.innerText = "🎲 다른 문제 뽑기";
+    rerollBtn.style.display = "block";
+    demoTypeSelectBtn.style.display = (gameMode === 'demo') ? "block" : "none";
+    switchModeSubBtn.style.display = "none";
+
+    stepDesc.innerText = gameMode === 'demo'
+      ? `1단계 [${DEMO_TYPE_NAMES[currentDemoType || 0]}]: 양변에 같은 수를 더하거나 빼서 좌변의 상수항 없애기`
+      : "1단계: 양변에 같은 수를 더하거나 빼서 좌변의 상수항 없애기 (힌트 없이 3문제 클리어 시 하드 모드 해금!)";
+    mainEq.innerHTML = tex(`x^2 ${latexBx(b)} ${latexConst(c)} = 0`);
+
+    leftExprText.innerHTML = `${tex(`x^2 ${latexBx(b)}`)} <span id="constTermSpan">${tex(latexConst(c))}</span>`;
+    leftOpSign.innerHTML = "";
+    leftInput.placeholder = "±수";
+    leftInput.value = "";
+    leftSubResult.innerHTML = `좌변의 상수항을 ${tex("0")}으로 만들어 보세요`;
+
+    rightExprText.innerHTML = tex("0");
+    rightOpSign.innerHTML = "";
+    rightInput.placeholder = "±수";
+    rightInput.value = "";
+    rightSubResult.innerHTML = "우변에도 똑같은 수를 연산하세요";
+
+    ansPart1.value = "";
+    ansPart2.value = "";
+    setTilt(0);
+    updateEqualSign(true);
+
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "좌변과 우변 접시에 알맞은 수를 입력해 상수항을 없애보세요";
+
+    setHintContent(
+      `<span class="prompt-tag">👩‍🏫 선생님의 발문</span> 좌변에 ${tex(`x^2 ${latexBx(b)}`)} 만 남기려면 상수항 ${tex(latexSignedNum(c))}을(를) 없애야 합니다. 등식의 성질을 이용해 양변의 접시에 각각 얼마를 더하거나 빼야 할지 직접 입력해 보세요!`,
+      "1단계 선생님의 발문 · 힌트 보기",
+      false
+    );
+
+    setTimeout(() => leftInput.focus(), 50);
+  }
+
+  function onScaleInput() {
+    if (step === 1) checkStep1Scale();
+    else if (step === 2) checkStep2Balance();
+  }
+
+  function parseSignedInput(str) {
+    const cleaned = str.replace(/\s+/g, '');
+    if (cleaned === '' || cleaned === '+' || cleaned === '-') return NaN;
+    return Number(cleaned);
+  }
+
+  function checkStep1Scale() {
+    const lVal = parseSignedInput(leftInput.value);
+    const rVal = parseSignedInput(rightInput.value);
+    const { b, c } = current;
+    const targetCancelVal = -c;
+    const constSpan = document.getElementById('constTermSpan');
+
+    if (isNaN(lVal) && isNaN(rVal)) {
+      setTilt(0);
+      updateEqualSign(true);
+      if (constSpan) constSpan.className = "";
+      leftSubResult.innerHTML = `좌변의 상수항을 ${tex("0")}으로 만들어 보세요`;
+      rightSubResult.innerHTML = "우변에도 똑같은 수를 연산하세요";
+      statusBadge.className = "status-badge status-neutral";
+      statusBadge.innerText = "좌변과 우변 접시에 알맞은 수를 입력해 보세요 (예: -2 또는 +5)";
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (!isNaN(lVal)) {
+      const newConst = c + lVal;
+      const lValTex = lVal >= 0 ? `+ ${lVal}` : `- ${Math.abs(lVal)}`;
+      if (newConst === 0) {
+        if (constSpan) constSpan.className = "strike-cancel";
+        leftSubResult.innerHTML = `<span class="strike-cancel">${tex(`${latexConst(c)} ${lValTex}`)}</span> &longrightarrow; <strong style="color:var(--success);">${tex(`x^2 ${latexBx(b)}`)} 만 남음!</strong>`;
+      } else {
+        if (constSpan) constSpan.className = "";
+        leftSubResult.innerHTML = `정리 결과: ${tex(`x^2 ${latexBx(b)} ${latexConst(newConst)}`)} (상수항이 남음)`;
+      }
+    } else {
+      if (constSpan) constSpan.className = "";
+      leftSubResult.innerHTML = "좌변 접시에 수를 입력하세요";
+    }
+
+    if (!isNaN(rVal)) {
+      rightSubResult.innerHTML = `정리 결과: ${tex(`${rVal}`)}`;
+    } else {
+      rightSubResult.innerHTML = "우변 접시에 수를 입력하세요";
+    }
+
+    if (!isNaN(lVal) && isNaN(rVal)) {
+      setTilt(-8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerHTML = `⚠️ 우변 접시에도 같은 수를 입력해야 등식이 유지됩니다 (${tex("\\neq")})`;
+      combineBtn.style.display = "none";
+      return;
+    }
+    if (isNaN(lVal) && !isNaN(rVal)) {
+      setTilt(8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerHTML = `⚠️ 좌변 접시에도 같은 수를 입력해야 등식이 유지됩니다 (${tex("\\neq")})`;
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (lVal !== rVal) {
+      sessionStats.step1Errors++;
+      setTilt(lVal > rVal ? -8 : 8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerHTML = `⚠️ 양변에 연산한 수가 서로 달라 등호가 깨졌습니다 (${tex("\\neq")})`;
+      setHintContent(
+        `<span class="prompt-tag">🚨 등식의 성질 힌트</span> 좌변과 우변에 서로 다른 수를 넣으면 등식이 성립하지 않습니다(${tex("\\neq")}). 양변에 <strong>같은 수</strong>를 넣어야 합니다!`,
+        "등식의 성질 힌트 보기",
+        true
+      );
+      combineBtn.style.display = "none";
+    } else {
+      setTilt(0);
+      updateEqualSign(true);
+      if (lVal === targetCancelVal) {
+        statusBadge.className = "status-badge status-succ";
+        statusBadge.innerText = "✨ 상수항 소거 성공! 오른쪽 아래 버튼(또는 Enter)을 눌러 2단계로 가세요!";
+        setHintContent(
+          `<span class="prompt-tag">🎉 1단계 성공</span> 양변에 똑같이 ${tex(latexSignedNum(lVal))}을(를) 연산하여 좌변의 상수항이 사라지고 ${tex(`x^2 ${latexBx(b)} = ${targetCancelVal}`)} 이 되었습니다!`,
+          "1단계 정리 설명 보기",
+          false
+        );
+        combineBtn.classList.remove('btn-hard-red');
+        combineBtn.innerHTML = `2단계로 이동하기 ➔ <span class="enter-key-badge">Enter ↵</span>`;
+        combineBtn.style.display = "block";
+      } else {
+        sessionStats.step1Errors++;
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerHTML = `⚖️ 저울은 평형(${tex("=")})이지만, 좌변에 아직 상수항이 남아 있습니다`;
+        setHintContent(
+          `<span class="prompt-tag">🤔 다시 생각해보기</span> 좌변의 상수항 ${tex(latexSignedNum(c))}을(를) 완전히 없애서 ${tex("0")}으로 만들려면 양변에 어떤 수를 넣어야 할지 다시 확인해 보세요!`,
+          "1단계 힌트 보기",
+          true
+        );
+        combineBtn.style.display = "none";
+      }
+    }
+  }
+
+  function handleStepTransition() {
+    if (step === 1 && (gameMode === 'normal' || gameMode === 'demo')) {
+      startStep2();
+    } else if (step === 2 && (gameMode === 'normal' || gameMode === 'demo')) {
+      handleCombine();
+    } else if (step === 4) {
+      if (pendingHardTransition || gameMode === 'hard') {
+        startHardMode();
+      } else {
+        rerollProblem();
+      }
+    }
+  }
+
+  function handleVerifyAction() {
+    if (gameMode === 'normal' || gameMode === 'demo') {
+      verifyFinalAnswer();
+    } else {
+      verifyHardAnswer();
+    }
+  }
+
+  // 2단계: 완전제곱식 만들기
+  function startStep2() {
+    step = 2;
+    updatePills(2);
+    resetHintCollapsed();
+    const { b, c } = current;
+    const rhs = -c;
+    const halfB = b / 2;
+
+    scaleArea.className = "workspace-grid step2-mode";
+    geoCard.style.display = "flex";
+    combineBtn.style.display = "none";
+
+    stepDesc.innerText = "2단계: 좌변을 완전제곱식으로 만드는 적절한 수 더하기";
+    mainEq.innerHTML = tex(`x^2 ${latexBx(b)} = ${rhs}`);
+
+    leftExprText.innerHTML = tex(`x^2 ${latexBx(b)}`);
+    leftOpSign.innerHTML = tex("+");
+    leftInput.placeholder = "?";
+    leftInput.value = "";
+    leftSubResult.innerHTML = "";
+
+    rightExprText.innerHTML = tex(`${rhs}`);
+    rightOpSign.innerHTML = tex("+");
+    rightInput.placeholder = "?";
+    rightInput.value = "";
+    rightSubResult.innerHTML = "";
+
+    tileRight.innerHTML = tex(`${halfB}x`);
+    tileBottom.innerHTML = tex(`${halfB}x`);
+    tileCorner.innerHTML = "?";
+    tileCorner.className = "tile tile-corner";
+
+    setTilt(0);
+    updateEqualSign(true);
+
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "양변 접시에 알맞은 수를 입력해 완전제곱식을 만드세요";
+
+    setHintContent(
+      `<span class="prompt-tag">👩‍🏫 선생님의 발문</span> 오른쪽 <strong>완전제곱식 넓이 모델</strong>을 관찰해 보세요! 빈 모서리를 채워 정사각형을 완성하려면 양변 접시에 어떤 수를 똑같이 더해야 할까요?`,
+      "2단계 선생님의 발문 · 힌트 보기",
+      false
+    );
+
+    setTimeout(() => leftInput.focus(), 50);
+  }
+
+  function updateEqualSign(isEqual) {
+    if (isEqual) {
+      eqSignBox.innerHTML = tex("=");
+      eqSignBox.className = "eq-sign-box equal";
+    } else {
+      eqSignBox.innerHTML = tex("\\neq");
+      eqSignBox.className = "eq-sign-box not-equal";
+    }
+  }
+
+  function checkStep2Balance() {
+    if (step !== 2) return;
+    const lVal = parseSignedInput(leftInput.value);
+    const rVal = parseSignedInput(rightInput.value);
+    const { b } = current;
+    const halfB = b / 2;
+    const targetVal = halfB * halfB;
+
+    if (isNaN(lVal)) {
+      tileCorner.innerHTML = "?";
+      tileCorner.className = "tile tile-corner";
+    } else if (lVal === targetVal) {
+      tileCorner.innerHTML = tex(`${lVal}`);
+      tileCorner.className = "tile tile-corner filled-correct";
+    } else {
+      tileCorner.innerHTML = tex(`${lVal}`);
+      tileCorner.className = "tile tile-corner filled-wrong";
+    }
+
+    if (isNaN(lVal) && isNaN(rVal)) {
+      setTilt(0);
+      updateEqualSign(true);
+      statusBadge.className = "status-badge status-neutral";
+      statusBadge.innerText = "양변 접시를 모두 채워주세요";
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (!isNaN(lVal) && isNaN(rVal)) {
+      setTilt(-8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerHTML = `⚠️ 우변 접시에도 수를 입력해야 등식이 유지됩니다 (${tex("\\neq")})`;
+      combineBtn.style.display = "none";
+      return;
+    }
+    if (isNaN(lVal) && !isNaN(rVal)) {
+      setTilt(8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerHTML = `⚠️ 좌변 접시에도 수를 입력해야 등식이 유지됩니다 (${tex("\\neq")})`;
+      combineBtn.style.display = "none";
+      return;
+    }
+
+    if (lVal !== rVal) {
+      sessionStats.step2Errors++;
+      setTilt(lVal > rVal ? -8 : 8);
+      updateEqualSign(false);
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerHTML = `⚠️ 양변에 더한 수가 서로 달라 등호가 깨졌습니다 (${tex("\\neq")})`;
+      setHintContent(
+        `<span class="prompt-tag">🚨 등식의 성질</span> 좌변과 우변에 더한 수가 서로 달라 등호(${tex("=")})가 깨졌습니다(${tex("\\neq")}). 등식이 성립하려면 양변에 어떻게 해야 할까요?`,
+        "등식의 성질 힌트 보기",
+        true
+      );
+      combineBtn.style.display = "none";
+    } else {
+      setTilt(0);
+      updateEqualSign(true);
+      if (lVal === targetVal) {
+        statusBadge.className = "status-badge status-succ";
+        statusBadge.innerText = "✨ 완전제곱식 조건 만족! 오른쪽 아래 버튼(또는 Enter)을 눌러 합체하세요!";
+        setHintContent(
+          `<span class="prompt-tag">🎉 2단계 성공</span> 양변에 똑같이 ${tex(`${targetVal}`)}을(를) 더해 좌변이 완전제곱식 ${tex(latexFactor(halfB))} 으로 묶일 준비가 끝났습니다!`,
+          "2단계 완성 설명 보기",
+          false
+        );
+        combineBtn.classList.remove('btn-hard-red');
+        combineBtn.innerHTML = `🧲 완전제곱식 묶기 · 3단계 이동 ➔ <span class="enter-key-badge">Enter ↵</span>`;
+        combineBtn.style.display = "block";
+      } else {
+        sessionStats.step2Errors++;
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerHTML = `⚖️ 양변은 같지만(${tex("=")}), 좌변이 완전제곱식이 되지 않습니다`;
+        setHintContent(
+          `<span class="prompt-tag">🤔 다시 생각해보기</span> 양변에 같은 수를 더해 등식(${tex("=")})은 유지되었지만, 좌변이 하나의 완전제곱식 ${tex("(x \\pm \\square)^2")}으로 묶이지 않습니다. 오른쪽 넓이 모델에서 가로·세로 타일의 길이를 다시 살펴볼까요?`,
+          "완전제곱식 조건 힌트 보기",
+          true
+        );
+        combineBtn.style.display = "none";
+      }
+    }
+  }
+
+  function setTilt(deg) {
+    beam.style.transform = `rotate(${deg}deg)`;
+    leftPlate.style.transform = `translateY(${-deg * 1.3}px)`;
+    rightPlate.style.transform = `translateY(${deg * 1.3}px)`;
+  }
+
+  // 3단계: 해 구하기
+  function handleCombine() {
+    step = 3;
+    updatePills(3);
+    resetHintCollapsed();
+    const { b, c } = current;
+    const halfB = b / 2;
+    const rhsTotal = -c + halfB * halfB;
+
+    scaleArea.style.display = "none";
+    combineBtn.style.display = "none";
+    solveArea.style.display = "block";
+
+    stepDesc.innerText = "3단계: 제곱근의 뜻을 이용하여 해 구하기";
+    mainEq.innerHTML = tex(`${latexFactor(halfB)} = ${rhsTotal}`);
+    statusBadge.className = "status-badge status-succ";
+    statusBadge.innerText = "완전제곱식 완성! 스스로 해를 구해보세요";
+
+    setHintContent(
+      `<span class="prompt-tag">👩‍🏫 스스로 탐구 힌트</span> 완전제곱식 ${tex(`${latexFactor(halfB)} = ${rhsTotal}`)} 이 완성되었습니다! 제곱을 풀면 우변이 어떻게 되는지, 그리고 좌변에 남은 수를 이항하면 어떻게 바뀌는지 생각하여 빈칸을 채워보세요.`,
+      "3단계 스스로 탐구 힌트 보기",
+      false
+    );
+
+    actionBtn.style.display = "block";
+    actionBtn.className = "main-step-btn btn-check-ans";
+    actionBtn.innerHTML = `✅ 정답 확인하기 <span class="enter-key-badge">Enter ↵</span>`;
+
+    setTimeout(() => ansPart1.focus(), 50);
+  }
+
+  function onStep3Input() {
+    if (step !== 3) return;
+    const u1 = parseSignedInput(ansPart1.value);
+    const u2 = parseSignedInput(ansPart2.value);
+    actionBtn.classList.toggle('ready-blink', !isNaN(u1) && !isNaN(u2));
+  }
+
+  function verifyFinalAnswer() {
+    const { b, c } = current;
+    const halfB = b / 2;
+    const expectedPart1 = -halfB;
+    const expectedPart2 = -c + halfB * halfB;
+
+    const u1 = parseSignedInput(ansPart1.value);
+    const u2 = parseSignedInput(ansPart2.value);
+
+    if (isNaN(u1) || isNaN(u2)) {
+      statusBadge.className = "status-badge status-warn";
+      statusBadge.innerText = "두 빈칸을 모두 입력해주세요";
+      return;
+    }
+
+    if (u1 === expectedPart1 && u2 === expectedPart2) {
+      showNormalCompletionScreen(b, c, halfB, expectedPart1, expectedPart2);
+      return;
+    }
+
+    sessionStats.step3Errors++;
+    let part1Feedback = "";
+    if (u1 !== expectedPart1) {
+      if (u1 === halfB) {
+        if (!sessionStats.step3ErrorTypes.includes("이항부호미변경")) sessionStats.step3ErrorTypes.push("이항부호미변경");
+        part1Feedback = `좌변의 상수항을 등호 반대편(우변)으로 <strong>이항할 때 부호가 어떻게 되어야 하는지</strong> 다시 확인해 보세요!`;
+      } else {
+        if (!sessionStats.step3ErrorTypes.includes("상수항숫자오기입")) sessionStats.step3ErrorTypes.push("상수항숫자오기입");
+        part1Feedback = `위쪽의 완전제곱식 ${tex(`${latexFactor(halfB)} = ${expectedPart2}`)} 에서 <strong>좌변의 괄호 안에 있던 상수항이 어떤 숫자였는지</strong> 다시 한번 확인해 보세요!`;
+      }
+    }
+    if (u2 !== expectedPart2 && !sessionStats.step3ErrorTypes.includes("근호안숫자오기입")) {
+      sessionStats.step3ErrorTypes.push("근호안숫자오기입");
+    }
+
+    statusBadge.className = "status-badge status-err";
+    if (u1 !== expectedPart1 && u2 === expectedPart2) {
+      statusBadge.innerText = u1 === halfB
+        ? "근호 안의 수는 맞았어요! 이항할 때의 부호를 다시 확인해 볼까요?"
+        : "근호 안의 수는 맞았어요! 좌변의 상수항이 어떤 수였는지 확인해 볼까요?";
+      setHintContent(`<span class="prompt-tag">🤔 상수항 점검 힌트</span> ${part1Feedback}`, "오답 점검 힌트 보기", true);
+    } else if (u1 === expectedPart1 && u2 !== expectedPart2) {
+      statusBadge.innerText = "이항한 앞쪽 수는 맞았어요! 근호 안의 수를 다시 살펴볼까요?";
+      setHintContent(`<span class="prompt-tag">🤔 제곱근 점검 힌트</span> 제곱해서 우변의 수가 되었다면, 제곱을 풀었을 때 <strong>근호(${tex("\\sqrt{\\phantom{x}}")}) 안</strong>에는 어떤 수가 들어가야 할까요?`, "오답 점검 힌트 보기", true);
+    } else {
+      statusBadge.innerText = "다시 한번 차근차근 확인해 볼까요? (위쪽 힌트 버튼을 눌러보세요)";
+      setHintContent(`<span class="prompt-tag">🤔 2가지 점검 힌트</span> ① <strong>앞쪽 빈칸:</strong> ${part1Feedback}<br>② <strong>근호 안 빈칸:</strong> 제곱해서 우변의 수가 되려면 근호 안에 어떤 수가 들어가야 할지 다시 확인해 보세요!`, "오답 점검 힌트 보기", true);
+    }
+  }
+
+  function showNormalCompletionScreen(b, c, halfB, expectedPart1, expectedPart2) {
+    step = 4;
+    updatePills(4);
+
+    let justUnlockedHard = false;
+    if (gameMode === 'normal' && sessionStats.hintCount === 0) {
+      normalNoHintClears++;
+      if (normalNoHintClears >= 3 && !isHardUnlocked) {
+        isHardUnlocked = true;
+        justUnlockedHard = true;
+      }
+    }
+    updateStampDisplay();
+
+    const sqrtVal = Math.sqrt(expectedPart2);
+    const isPerfectSquare = Number.isInteger(sqrtVal);
+    let finalAnsHtml = tex(`x = ${expectedPart1} \\pm \\sqrt{${expectedPart2}}`);
+    if (isPerfectSquare) {
+      finalAnsHtml = `${tex(`x = ${expectedPart1} \\pm ${sqrtVal}`)} &nbsp;(${tex(`x = ${expectedPart1 + sqrtVal}`)} 또는 ${tex(`x = ${expectedPart1 - sqrtVal}`)})`;
+    }
+
+    topStepBox.style.display = "none";
+    topStatusWrap.style.display = "none";
+    hintBox.classList.remove('open');
+    solveArea.style.display = "none";
+    actionBtn.style.display = "none";
+    completeArea.style.display = "flex";
+
+    completeSummary.innerHTML = `
+      <div class="summary-item">
+        <span class="summary-label">처음 이차방정식</span>
+        <span class="summary-eq">${tex(`x^2 ${latexBx(b)} ${latexConst(c)} = 0`)}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">1단계: 상수항 정리</span>
+        <span class="summary-eq">${tex(`x^2 ${latexBx(b)} = ${-c}`)}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">2단계: 완전제곱식</span>
+        <span class="summary-eq">${tex(`${latexFactor(halfB)} = ${expectedPart2}`)}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">3단계: 최종 해</span>
+        <span class="summary-eq final-ans">${finalAnsHtml}</span>
+      </div>
+    `;
+
+    if (gameMode === 'normal' && isHardUnlocked) {
+      pendingHardTransition = true;
+      completeArea.classList.add('hard-unlock-celebrate');
+      completeBadge.className = "complete-badge red-badge";
+      completeBadge.innerText = "🔥 HARD MODE UNLOCKED!";
+      completeTitle.innerText = justUnlockedHard
+        ? "🔥 힌트 없이 3문제 클리어 달성! 드디어 [하드 모드]가 열렸습니다!"
+        : "🎉 정답입니다! 오른쪽 아래 빨간 버튼을 눌러 하드 모드에 도전해 보세요!";
+      completeNote.innerHTML = `<span style="color:#b91c1c;">⚡ 하드 모드에서는 저울과 힌트 없이 <strong>초록색 칠판</strong>에 직접 풀이 과정을 쓰며 심화 방정식을 해결합니다! (<strong>Enter 키</strong>를 누르면 바로 이동합니다)</span>`;
+
+      combineBtn.className = "main-step-btn btn-next-blink btn-hard-red";
+      combineBtn.innerHTML = `🔥 하드 모드로 넘어가기! ➔ <span class="enter-key-badge">Enter ↵</span>`;
+      combineBtn.style.display = "block";
+      rerollBtn.innerText = "🎲 다른 문제 뽑기";
+    } else {
+      pendingHardTransition = false;
+      completeArea.classList.remove('hard-unlock-celebrate');
+      completeBadge.className = "complete-badge";
+      completeBadge.innerText = gameMode === 'demo'
+        ? "🏆 예시 시연 완료"
+        : `🏆 NORMAL CLEAR (${Math.min(3, normalNoHintClears)}/3)`;
+      completeTitle.innerText = "🎉 정답입니다! 완전제곱식 풀이를 완벽히 마스터했어요!";
+      const rem = Math.max(0, 3 - normalNoHintClears);
+      completeNote.innerHTML = gameMode === 'demo'
+        ? `✨ 예시 시연 문제 풀이가 완료되었습니다! 아래 버튼으로 다른 유형을 선택하거나 다음 문제를 뽑을 수 있습니다.`
+        : (sessionStats.hintCount === 0
+            ? `✨ 힌트 없이 스스로 풀어서 스탬프 1개를 획득했습니다! (앞으로 <strong>${rem}문제</strong> 더 힌트 없이 풀면 🔥 <strong>하드 모드</strong>가 열립니다!)`
+            : `💡 이번 문제에서는 힌트를 ${sessionStats.hintCount}번 참고했어요. <strong>힌트 없이 3문제</strong>를 풀면 🔥 하드 모드가 열립니다!`);
+
+      combineBtn.className = "main-step-btn btn-next-blink";
+      combineBtn.innerHTML = `🎲 다음 문제 풀기 ➔ <span class="enter-key-badge">Enter ↵</span>`;
+      combineBtn.style.display = "block";
+      rerollBtn.innerText = "🎲 다른 문제 뽑기";
+    }
+
+    const eqUnicode = `x² ${b > 0 ? '+ ' + b + 'x' : '- ' + Math.abs(b) + 'x'} ${c > 0 ? '+ ' + c : '- ' + Math.abs(c)} = 0`;
+    const modeLabel = gameMode === 'demo' ? (DEMO_TYPE_NAMES[currentDemoType || 0]) : "[노말] 통합 랜덤";
+    recordCompletionLog(eqUnicode, modeLabel);
+  }
+
+  // ============================================================================
+  // 3️⃣ 🔥 하드 모드: 깔끔한 초록 칠판 + 자유 타이핑(실시간 LaTeX 렌더링 & 보조기호 버튼) + 흰색 분필 필기
+  // ============================================================================
+  function startHardMode() {
+    gameMode = 'hard';
+    step = 3;
+    pendingHardTransition = false;
+    appContainer.classList.add('hard-theme');
+    updateTeacherTabsActive();
+    updatePills(1);
+    resetHintCollapsed();
+
+    modeBadge.className = "mode-badge hard";
+    modeBadge.innerText = "🔥 하드 모드 (칠판 실전)";
+    demoTypeSelectBtn.style.display = "none";
+    switchModeSubBtn.style.display = "block";
+    rerollBtn.style.display = "block";
+    rerollBtn.innerText = "🎲 다른 하드 문제 뽑기";
+
+    hardProblem = generateHardEquation();
+
+    sessionStats = {
+      startTime: Date.now(),
+      step1Errors: 0,
+      step2Errors: 0,
+      step3Errors: 0,
+      step3ErrorTypes: [],
+      hintCount: 0
+    };
+
+    topStepBox.style.display = "block";
+    topStatusWrap.style.display = "flex";
+    step0Area.style.display = "none";
+    scaleArea.style.display = "none";
+    solveArea.style.display = "none";
+    completeArea.style.display = "none";
+    hardArea.style.display = "flex";
+
+    hintToggleBtn.style.display = "inline-flex";
+    hintToggleBtn.className = "btn-hint-toggle locked-hard";
+    hintToggleBtn.innerText = "🔒 하드 모드에서는 힌트를 쓸 수 없습니다";
+
+    stepDesc.innerText = `🔥 ${hardProblem.subtypeName} — 칠판에 키보드로 자유롭게 수식을 타이핑(우측 상단 x², x 보조버튼 활용)하거나 분필로 필기해 풀어보세요!`;
+    mainEq.innerHTML = tex(hardProblem.displayLatex);
+
+    statusBadge.className = "status-badge status-neutral";
+    statusBadge.innerText = "칠판을 클릭해 식을 타이핑하거나 분필로 필기한 뒤 아래 최종 답의 틀을 채워보세요!";
+
+    clearChalkboard();
+    hardInt1.value = "";
+    hardInt2.value = "";
+    hardFracNum1.value = "";
+    hardFracDen1.value = "";
+    hardFracNum2.value = "";
+    hardFracDen2.value = "";
+
+    setHardAnswerFrame(hardProblem.isFraction);
+
+    combineBtn.style.display = "none";
+    actionBtn.style.display = "block";
+    actionBtn.className = "main-step-btn btn-check-ans btn-hard-red";
+    actionBtn.innerHTML = `🔥 하드 정답 확인하기 <span class="enter-key-badge">Enter ↵</span>`;
+
+    setTimeout(() => {
+      resizeChalkCanvas();
+      setChalkTool('type');
+    }, 60);
+  }
+
+  function setHardAnswerFrame(useFraction) {
+    hardUseFractionFrame = useFraction;
+    if (useFraction) {
+      hardIntFrame.style.display = "none";
+      hardFracFrame.style.display = "flex";
+      frameToggleBtn.innerText = "🔢 정수 입력 틀(x = □ ± √□)로 전환";
+    } else {
+      hardIntFrame.style.display = "flex";
+      hardFracFrame.style.display = "none";
+      frameToggleBtn.innerText = "➗ 분수 입력 틀(분자/분모 네모칸)로 전환";
+    }
+  }
+
+  function toggleHardAnswerFrame() {
+    setHardAnswerFrame(!hardUseFractionFrame);
+  }
+
+  function onHardAnsInput() {
+    if (gameMode !== 'hard') return;
+    if (!hardUseFractionFrame) {
+      const v1 = parseSignedInput(hardInt1.value);
+      const v2 = parseSignedInput(hardInt2.value);
+      actionBtn.classList.toggle('ready-blink', !isNaN(v1) && !isNaN(v2));
+    } else {
+      const n1 = parseSignedInput(hardFracNum1.value);
+      const d1 = parseSignedInput(hardFracDen1.value);
+      const n2 = parseSignedInput(hardFracNum2.value);
+      const d2 = parseSignedInput(hardFracDen2.value);
+      actionBtn.classList.toggle('ready-blink', !isNaN(n1) && !isNaN(d1) && !isNaN(n2) && !isNaN(d2));
+    }
+  }
+
+  function verifyHardAnswer() {
+    if (!hardUseFractionFrame) {
+      if (hardProblem.isFraction) {
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerText = "이 문제는 일차항 계수가 홀수여서 분수가 나옵니다! [➗ 분수 입력 틀]로 전환해 분자·분모를 입력해 보세요.";
+        setHardAnswerFrame(true);
+        return;
+      }
+      const u1 = parseSignedInput(hardInt1.value);
+      const u2 = parseSignedInput(hardInt2.value);
+      if (isNaN(u1) || isNaN(u2)) {
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerText = "최종 답의 네모칸 두 개를 모두 입력해 주세요!";
+        return;
+      }
+      if (u1 === hardProblem.ansP && u2 === hardProblem.ansQ) {
+        showHardCompletionScreen();
+        return;
+      }
+      sessionStats.step3Errors++;
+      if (u1 !== hardProblem.ansP && !sessionStats.step3ErrorTypes.includes("하드_앞쪽수오류")) {
+        sessionStats.step3ErrorTypes.push("하드_앞쪽수오류");
+      }
+      if (u2 !== hardProblem.ansQ && !sessionStats.step3ErrorTypes.includes("하드_근호안수오류")) {
+        sessionStats.step3ErrorTypes.push("하드_근호안수오류");
+      }
+      statusBadge.className = "status-badge status-err";
+      statusBadge.innerText = "아쉽습니다! 양변을 x²의 계수로 먼저 나누었는지, 우변의 항을 바르게 이항했는지 칠판 풀이를 다시 점검해 보세요!";
+    } else {
+      const n1 = parseSignedInput(hardFracNum1.value);
+      const d1 = parseSignedInput(hardFracDen1.value);
+      const n2 = parseSignedInput(hardFracNum2.value);
+      const d2 = parseSignedInput(hardFracDen2.value);
+
+      if (isNaN(n1) || isNaN(d1) || isNaN(n2) || isNaN(d2)) {
+        statusBadge.className = "status-badge status-warn";
+        statusBadge.innerText = "분자와 분모 네모칸 4개를 모두 입력해 주세요!";
+        return;
+      }
+      if (d1 === 0 || d2 <= 0) {
+        statusBadge.className = "status-badge status-err";
+        statusBadge.innerText = "분모에는 0이 올 수 없으며, 근호 안의 수는 양수여야 합니다!";
+        return;
+      }
+
+      const expectedRatio1 = hardProblem.fracNum1 / hardProblem.fracDen1;
+      const userRatio1 = n1 / d1;
+      const isPart1Ok = Math.abs(userRatio1 - expectedRatio1) < 1e-9;
+
+      const isPart2Ok =
+        (Math.abs(n2 / d2 - hardProblem.fracNum2 / hardProblem.fracDen2) < 1e-9) ||
+        (hardProblem.fracDen2 === 4 && n2 === hardProblem.fracNum2 && d2 === 2);
+
+      if (isPart1Ok && isPart2Ok) {
+        showHardCompletionScreen();
+        return;
+      }
+
+      sessionStats.step3Errors++;
+      if (!isPart1Ok && !sessionStats.step3ErrorTypes.includes("하드_분수앞쪽오류")) {
+        sessionStats.step3ErrorTypes.push("하드_분수앞쪽오류");
+      }
+      if (!isPart2Ok && !sessionStats.step3ErrorTypes.includes("하드_분수근호오류")) {
+        sessionStats.step3ErrorTypes.push("하드_분수근호오류");
+      }
+
+      statusBadge.className = "status-badge status-err";
+      if (!isPart1Ok && isPart2Ok) {
+        statusBadge.innerText = "근호 안의 분수는 정확합니다! 앞쪽 분수의 부호나 분자·분모를 다시 점검해 보세요.";
+      } else if (isPart1Ok && !isPart2Ok) {
+        statusBadge.innerText = "앞쪽 분수는 정확합니다! 우변을 통분하여 더한 근호 안의 분자·분모를 다시 점검해 보세요.";
+      } else {
+        statusBadge.innerText = "다시 한번 칠판에 일차항 계수의 반의 제곱을 양변에 더하고 통분하는 과정을 적어 확인해 보세요!";
+      }
+    }
+  }
+
+  function showHardCompletionScreen() {
+    step = 4;
+    hardClears++;
+    updateStampDisplay();
+    updatePills(4);
+
+    topStepBox.style.display = "none";
+    topStatusWrap.style.display = "none";
+    hardArea.style.display = "none";
+    actionBtn.style.display = "none";
+    completeArea.style.display = "flex";
+    completeArea.classList.add('hard-unlock-celebrate');
+
+    completeBadge.className = "complete-badge red-badge";
+    completeBadge.innerText = `🔥 HARD MODE CLEAR! (누적 ${hardClears}회)`;
+    completeTitle.innerText = "🏆 대단합니다! 저울과 힌트 없이 칠판 실전 문제를 완벽히 해결했어요!";
+
+    completeSummary.innerHTML = `
+      <div class="summary-item">
+        <span class="summary-label">출제된 심화 방정식</span>
+        <span class="summary-eq">${tex(hardProblem.displayLatex)}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">이항 및 계수 정리</span>
+        <span class="summary-eq">${tex(hardProblem.reducedLatex)}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">완전제곱식 변형</span>
+        <span class="summary-eq">${tex(hardProblem.squareLatex)}</span>
+      </div>
+      <span class="summary-arrow">➔</span>
+      <div class="summary-item">
+        <span class="summary-label">최종 해</span>
+        <span class="summary-eq final-ans">${tex(hardProblem.finalAnsLatex)}</span>
+      </div>
+    `;
+
+    completeNote.innerHTML = `🔥 비계(저울·힌트) 없이 스스로 식을 조작하여 해를 도출했습니다! 이제 실제 교실 칠판에서도 자신 있게 풀 수 있어요!`;
+
+    combineBtn.className = "main-step-btn btn-next-blink btn-hard-red";
+    combineBtn.innerHTML = `🔥 다음 하드 문제 도전하기 ➔ <span class="enter-key-badge">Enter ↵</span>`;
+    combineBtn.style.display = "block";
+
+    const eqUnicode = latexToUnicode(hardProblem.displayLatex);
+    recordCompletionLog(eqUnicode, hardProblem.subtypeName);
+  }
+
+  // 초기 실행
+  window.addEventListener('DOMContentLoaded', () => {
+    initStaticMath();
+    initChalkCanvas();
+    renderChalkLatexBoard();
+    updateTeacherUI();
+    current = generateEquationByType(4);
+    startStep1();
+    if (!studentPin) {
+      openPinModal();
+    }
+  });
+</script>
+</body>
+</html>
